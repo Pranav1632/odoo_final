@@ -297,10 +297,38 @@ router.post(
       throw new ApiError(400, `Cannot recompute a ${payrun.status} payrun`);
     }
 
+    // Duplicate-payslip check — an employee already validated/paid in a *different*
+    // payrun whose period overlaps this one would otherwise be silently paid twice
+    // for the same period, with no warning. One batched query for the whole payrun.
+    const employeeIds = (payrun as any).payslips.map((p: any) => p.employeeId);
+    const overlappingPayslips = await prisma.payslip.findMany({
+      where: {
+        employeeId: { in: employeeIds },
+        payrunId: { not: id },
+        status: { in: ['validated', 'paid'] },
+        payrun: {
+          periodStart: { lte: payrun.periodEnd },
+          periodEnd: { gte: payrun.periodStart },
+        },
+      },
+      select: { employeeId: true, payrunId: true, payrun: { select: { name: true } } },
+    });
+    const duplicateByEmployee = new Map<string, string>();
+    for (const p of overlappingPayslips) {
+      duplicateByEmployee.set(p.employeeId, p.payrun.name);
+    }
+
     // Process each payslip in parallel
     const updates = await Promise.all(
       (payrun as any).payslips.map(async (payslip: any) => {
         const warnings: string[] = [];
+
+        const duplicatePayrunName = duplicateByEmployee.get(payslip.employeeId);
+        if (duplicatePayrunName) {
+          warnings.push(
+            `duplicate payslip — employee already has a validated/paid payslip for an overlapping period in "${duplicatePayrunName}"`
+          );
+        }
 
         // 1. Resolve the period-correct contract
         const contract = await getActiveContractForPeriod(
@@ -421,7 +449,7 @@ router.post(
     const blockingWarnings: string[] = [];
     for (const payslip of (payrun as any).payslips) {
       for (const w of payslip.warnings) {
-        if (w.includes('skipped') || w.includes('missing bank details')) {
+        if (w.includes('skipped') || w.includes('missing bank details') || w.includes('duplicate payslip')) {
           blockingWarnings.push(`Employee ${payslip.employeeId}: ${w}`);
         }
       }

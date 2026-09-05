@@ -16,6 +16,8 @@ const createSchema = z.object({
   managerId: z.string().optional(),
   bankAccountNumber: z.string().optional(),
   status: z.enum(['active', 'inactive']).default('active'),
+  employmentType: z.enum(['Full-time', 'Part-time', 'Contract']).default('Full-time'),
+  hireDate: z.string().transform((s) => new Date(s)).optional(),
 });
 
 const updateSchema = z.object({
@@ -26,6 +28,8 @@ const updateSchema = z.object({
   managerId: z.string().optional().nullable(),
   bankAccountNumber: z.string().optional().nullable(),
   status: z.enum(['active', 'inactive']).optional(),
+  employmentType: z.enum(['Full-time', 'Part-time', 'Contract']).optional(),
+  hireDate: z.string().transform((s) => new Date(s)).optional(),
 });
 
 // GET /api/employees

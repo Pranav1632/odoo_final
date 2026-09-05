@@ -23,6 +23,13 @@ const periodOptions = [
   { value: '2026-06', label: 'June 2026' },
 ];
 
+const employmentTypeOptions = [
+  { value: 'all', label: 'All Employee Types' },
+  { value: 'Full-time', label: 'Full-time' },
+  { value: 'Part-time', label: 'Part-time' },
+  { value: 'Contract', label: 'Contract' },
+];
+
 function BarChart({ data, maxValue, height = 220 }) {
   if (!data || data.length === 0) {
     return (
@@ -201,6 +208,7 @@ export function Dashboard() {
   const [filters, setFilters] = useState({
     period: 'all',
     department: 'all',
+    employmentType: 'all',
   });
   const [loading, setLoading] = useState(false);
   const [dbMetrics, setDbMetrics] = useState(null);
@@ -218,6 +226,9 @@ export function Dashboard() {
       if (filters.period && filters.period !== 'all') {
         params.append('period', filters.period);
       }
+      if (filters.employmentType && filters.employmentType !== 'all') {
+        params.append('employmentType', filters.employmentType);
+      }
       const data = await dashboardApi.get(params.toString());
       // Ignore this response if a newer filter change has already fired another request.
       if (requestId !== latestRequestId.current) return;
@@ -234,14 +245,14 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchMetrics();
-  }, [filters.department, filters.period]);
+  }, [filters.department, filters.period, filters.employmentType]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
-  
+
   const handleResetFilters = () => {
-    setFilters({ period: 'all', department: 'all' });
+    setFilters({ period: 'all', department: 'all', employmentType: 'all' });
   };
   
   const breadcrumbs = [
@@ -396,6 +407,13 @@ export function Dashboard() {
           onChange={(e) => handleFilterChange('department', e.target.value)}
           options={departmentOptions}
           className="w-52"
+        />
+        <Select
+          label="Employee Type"
+          value={filters.employmentType}
+          onChange={(e) => handleFilterChange('employmentType', e.target.value)}
+          options={employmentTypeOptions}
+          className="w-48"
         />
       </div>
 

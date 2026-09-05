@@ -17,7 +17,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const department = req.query.department as string | undefined;
     const period = req.query.period as string | undefined;
-    
+    const employmentType = req.query.employmentType as string | undefined;
+    const employeeFilter: Record<string, unknown> =
+      employmentType && employmentType !== 'all' ? { employmentType } : {};
+
     let periodStart: Date | undefined;
     let periodEnd: Date | undefined;
 
@@ -43,8 +46,11 @@ router.get(
       };
     }
 
-    if (department && department !== 'all') {
-      payslipWhere.employee = { department };
+    if ((department && department !== 'all') || Object.keys(employeeFilter).length > 0) {
+      payslipWhere.employee = {
+        ...(department && department !== 'all' ? { department } : {}),
+        ...employeeFilter,
+      };
     }
 
     const todayStart = new Date();
@@ -79,6 +85,7 @@ router.get(
             startDate: { gte: periodStart },
             endDate: { lte: periodEnd },
           } : {}),
+          ...(Object.keys(employeeFilter).length > 0 ? { employee: employeeFilter } : {}),
         },
       }),
       // Department cost grouping
@@ -90,7 +97,7 @@ router.get(
       // Payruns needing validation
       prisma.payrun.count({ where: { status: 'computed' } }),
       // Active employees with missing bank details
-      prisma.employee.count({ where: { bankAccountNumber: null, status: 'active' } }),
+      prisma.employee.count({ where: { bankAccountNumber: null, status: 'active', ...employeeFilter } }),
       // Payslips with warnings (array length > 0)
       prisma.payslip.count({
         where: {
@@ -103,10 +110,16 @@ router.get(
         where: {
           checkIn: { gte: todayStart },
           checkOut: null,
+          ...(Object.keys(employeeFilter).length > 0 ? { employee: employeeFilter } : {}),
         },
       }),
       // Pending time off requests
-      prisma.timeOffRequest.count({ where: { status: 'pending' } }),
+      prisma.timeOffRequest.count({
+        where: {
+          status: 'pending',
+          ...(Object.keys(employeeFilter).length > 0 ? { employee: employeeFilter } : {}),
+        },
+      }),
       // Recent payruns for trend chart
       prisma.payrun.findMany({
         where: { status: { in: ['paid', 'validated'] } },
@@ -114,6 +127,7 @@ router.get(
         take: 6,
         include: {
           payslips: {
+            where: Object.keys(employeeFilter).length > 0 ? { employee: employeeFilter } : undefined,
             select: { netSalary: true },
           },
         },
@@ -122,12 +136,16 @@ router.get(
       prisma.attendance.groupBy({
         by: ['status'],
         _count: { _all: true },
+        ...(Object.keys(employeeFilter).length > 0 ? { where: { employee: employeeFilter } } : {}),
       }),
       // Time off types and requests
       prisma.timeOffType.findMany({
         include: {
           requests: {
-            where: { status: 'approved' },
+            where: {
+              status: 'approved',
+              ...(Object.keys(employeeFilter).length > 0 ? { employee: employeeFilter } : {}),
+            },
             select: { duration: true },
           },
         },

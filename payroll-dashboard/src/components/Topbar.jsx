@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Avatar, Dropdown } from './UI';
 
 const ALL_NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', href: '/', roles: ['ALL'] },
+  { id: 'dashboard', label: 'Reports', href: '/', roles: ['ALL'] },
   { id: 'employees', label: 'Employees', href: '/employees', roles: ['ALL'] },
   { id: 'contracts', label: 'Contracts', href: '/contracts', roles: ['ALL'] },
   { id: 'schedules', label: 'Schedules', href: '/schedules', roles: ['ALL'] },

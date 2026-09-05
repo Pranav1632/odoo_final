@@ -95,13 +95,8 @@ export function EmployeeForm() {
               managerId: emp.managerId || '',
               scheduleId: emp.scheduleId || '',
               employmentStatus: emp.status === 'active' ? 'Active' : 'Inactive',
-              employmentType: 'Full-time',
-              // Employee has no createdAt/startDate of its own — the earliest linked
-              // contract (contracts are ordered startDate desc, so the last entry is
-              // the oldest) is the closest real signal for when they joined.
-              startDate: emp.contracts?.length
-                ? emp.contracts[emp.contracts.length - 1].startDate?.split('T')[0]
-                : new Date().toISOString().split('T')[0],
+              employmentType: emp.employmentType || 'Full-time',
+              startDate: emp.hireDate?.split('T')[0] || new Date().toISOString().split('T')[0],
               endDate: '',
               workEmail: `${(emp.name || 'user').toLowerCase().replace(/\s+/g, '.')}@company.com`,
               workPhone: '+1-555-0199',
@@ -157,6 +152,8 @@ export function EmployeeForm() {
         managerId: formData.managerId || undefined,
         bankAccountNumber: formData.accountNumber || undefined,
         status: formData.employmentStatus === 'Active' ? 'active' : 'inactive',
+        employmentType: formData.employmentType,
+        hireDate: formData.startDate || undefined,
       };
       if (isEdit) {
         await employeesApi.update(id, payload);
@@ -431,9 +428,7 @@ export function EmployeeForm() {
                 <CardBody className="space-y-4">
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     Active Since: <span className="font-medium text-gray-900 dark:text-white">
-                      {employee?.contracts?.length
-                        ? formatDate(employee.contracts[employee.contracts.length - 1].startDate)
-                        : 'N/A'}
+                      {employee?.hireDate ? formatDate(employee.hireDate) : 'N/A'}
                     </span>
                   </div>
                   <div className="space-y-3">

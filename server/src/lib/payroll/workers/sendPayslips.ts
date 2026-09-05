@@ -3,11 +3,15 @@ import { redisConnection } from '../queue';
 import { prisma } from '../../prisma';
 import { writeAuditLog } from '../../audit';
 import { writeErrorLog } from '../../errorLog';
+import { generatePayslipPdf } from '../generatePdf';
+import { sendPayslipEmail } from '../../email';
 
 export interface SendPayslipsJobData {
   payrunId: string;
   requestedByUserId: string;
 }
+
+const periodFormatter = new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric' });
 
 /**
  * Core send-payslips logic, factored out of the BullMQ Worker callback so it can
@@ -16,11 +20,12 @@ export interface SendPayslipsJobData {
  *
  * For each validated payslip in the payrun:
  * - Looks up the employee's email
- * - LOCAL DEMO ONLY: logs to console instead of calling any email API
+ * - Generates the payslip PDF and emails it via SMTP (Mailpit locally)
  * - Updates payslip status to 'paid'
  *
  * Writes an audit log entry when done.
- * Writes an error log entry per employee with no email.
+ * Writes an error log entry per employee with no email, and per send failure
+ * (without failing the whole batch — one bad address shouldn't block the rest).
  */
 export async function processSendPayslipsJob({ payrunId, requestedByUserId }: SendPayslipsJobData) {
   // Only pick up payslips still awaiting send — 'paid' ones were already sent by a
@@ -31,18 +36,16 @@ export async function processSendPayslipsJob({ payrunId, requestedByUserId }: Se
       status: 'validated',
     },
     include: {
-      employee: {
-        include: {
-          user: { select: { email: true } },
-        },
-      },
+      employee: { include: { user: { select: { email: true } } } },
+      payrun: { select: { name: true, periodStart: true, periodEnd: true } },
+      lines: { orderBy: { category: 'asc' } },
     },
   });
 
   let sent = 0;
   const sentIds: string[] = [];
 
-  for (const payslip of payslips) {
+  for (const payslip of payslips as any[]) {
     const email = payslip.employee.user?.email;
 
     if (!email) {
@@ -54,8 +57,36 @@ export async function processSendPayslipsJob({ payrunId, requestedByUserId }: Se
       continue;
     }
 
-    // LOCAL DEMO ONLY — do NOT call any external email API
-    console.log(`[PAYSLIP SEND] Would email payslip ${payslip.id} to ${email}`);
+    try {
+      const pdfBuffer = await generatePayslipPdf({
+        employee: payslip.employee,
+        payrun: {
+          name: payslip.payrun.name,
+          periodStart: payslip.payrun.periodStart.toISOString(),
+          periodEnd: payslip.payrun.periodEnd.toISOString(),
+        },
+        workedDays: payslip.workedDays,
+        lines: payslip.lines,
+        netSalary: payslip.netSalary,
+      });
+
+      await sendPayslipEmail({
+        to: email,
+        employeeName: payslip.employee.name,
+        payrunName: payslip.payrun.name,
+        periodLabel: periodFormatter.format(payslip.payrun.periodStart),
+        netSalary: payslip.netSalary,
+        pdfBuffer,
+        pdfFilename: `payslip-${payslip.id}.pdf`,
+      });
+    } catch (err) {
+      await writeErrorLog({
+        route: 'sendPayslipsWorker',
+        message: `Failed to email payslip ${payslip.id} to ${email}: ${(err as Error).message}`,
+        userId: requestedByUserId,
+      });
+      continue;
+    }
 
     sentIds.push(payslip.id);
     sent++;

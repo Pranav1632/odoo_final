@@ -33,6 +33,8 @@ model Employee {
   scheduleId        String?
   schedule          WorkingSchedule? @relation(fields: [scheduleId], references: [id])
   status            String           @default("active")
+  employmentType    String           @default("Full-time") // Full-time | Part-time | Contract
+  hireDate          DateTime         @default(now())
   bankAccountNumber String?
   userId            String?          @unique
   user              User?            @relation(fields: [userId], references: [id])

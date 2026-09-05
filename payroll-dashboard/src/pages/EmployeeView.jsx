@@ -189,8 +189,12 @@ export function EmployeeView() {
                 </Badge>
               </div>
               <div>
+                <p className="text-xs text-gray-500">Employment Type</p>
+                <p className="font-medium text-gray-900">{employee.employmentType || 'Full-time'}</p>
+              </div>
+              <div>
                 <p className="text-xs text-gray-500">Start Date</p>
-                <p className="font-medium text-gray-900">{employee.createdAt ? formatDate(employee.createdAt) : '2026-01-01'}</p>
+                <p className="font-medium text-gray-900">{employee.hireDate ? formatDate(employee.hireDate) : '—'}</p>
               </div>
             </CardBody>
           </Card>

@@ -273,6 +273,11 @@ async function main() {
     const dept = departments[i % departments.length];
     const pos = positions[i % positions.length];
     const scheduleIdx = i % 3;
+    // Mostly full-time, with a realistic minority of part-time/contract staff —
+    // gives the dashboard's Employee Type filter something meaningful to split.
+    const employmentType = i % 7 === 0 ? 'Contract' : i % 5 === 0 ? 'Part-time' : 'Full-time';
+    const hireDate = new Date(2022, 0, 1);
+    hireDate.setDate(hireDate.getDate() + i * 23); // spread hire dates across ~3 years
 
     const u = await prisma.user.create({
       data: {
@@ -287,6 +292,8 @@ async function main() {
             jobPosition: pos,
             scheduleId: schedules[scheduleIdx].id,
             status: 'active',
+            employmentType,
+            hireDate,
             bankAccountNumber: `${1000000000 + i}`,
             managerId: hrManagers[i % 2]?.employee?.id,
           },
