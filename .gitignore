@@ -6,4 +6,9 @@ db_architecture.svg
 .pgdata/
 *.pgdata
 server/.pgdata/
-server/powershell.cmd
+server/powershell.cmd
+
+# Graphify tool outputs & caches
+graphify-out/
+.graphify/
+
