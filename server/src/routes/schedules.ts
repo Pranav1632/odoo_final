@@ -43,6 +43,7 @@ function computeWeeklyHours(
 router.get(
   '/',
   requireAuth,
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const schedules = await prisma.workingSchedule.findMany({
       include: {
@@ -64,7 +65,7 @@ router.get(
 router.post(
   '/',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const body = createSchema.parse(req.body);
     const schedule = await prisma.workingSchedule.create({
@@ -87,6 +88,7 @@ router.post(
 router.get(
   '/:id',
   requireAuth,
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     const schedule = await prisma.workingSchedule.findUnique({
@@ -110,26 +112,29 @@ router.get(
 router.patch(
   '/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     const body = updateSchema.parse(req.body);
 
-    // If lines are being updated, delete existing and recreate
-    if (body.lines) {
-      await prisma.scheduleLine.deleteMany({
-        where: { scheduleId: id },
-      });
-    }
+    // Delete-then-recreate of lines and the schedule update must be atomic —
+    // otherwise a failure between the two steps leaves the schedule with zero lines.
+    const schedule = await prisma.$transaction(async (tx) => {
+      if (body.lines) {
+        await tx.scheduleLine.deleteMany({
+          where: { scheduleId: id },
+        });
+      }
 
-    const schedule = await prisma.workingSchedule.update({
-      where: { id },
-      data: {
-        ...(body.name !== undefined ? { name: body.name } : {}),
-        ...(body.type !== undefined ? { type: body.type } : {}),
-        ...(body.lines ? { lines: { create: body.lines } } : {}),
-      },
-      include: { lines: true },
+      return tx.workingSchedule.update({
+        where: { id },
+        data: {
+          ...(body.name !== undefined ? { name: body.name } : {}),
+          ...(body.type !== undefined ? { type: body.type } : {}),
+          ...(body.lines ? { lines: { create: body.lines } } : {}),
+        },
+        include: { lines: true },
+      });
     });
 
     return res.json({
@@ -143,7 +148,7 @@ router.patch(
 router.delete(
   '/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     // Delete lines first, then schedule

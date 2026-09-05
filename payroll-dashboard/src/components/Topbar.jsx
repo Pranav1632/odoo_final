@@ -20,6 +20,7 @@ export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const searchRef = useRef(null);
+  const searchInputRef = useRef(null);
   const notifRef = useRef(null);
   const userMenuRef = useRef(null);
 
@@ -104,7 +105,7 @@ export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {
             {searchOpen && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-3xl shadow-xl border border-gray-100 animate-scale-in z-50 overflow-hidden">
                 <input
-                  ref={searchRef}
+                  ref={searchInputRef}
                   placeholder="Search employees, contracts, payruns…"
                   className="w-full px-4 py-3 border-0 bg-transparent text-sm font-medium text-ink-900 focus:outline-none placeholder-gray-400"
                   autoFocus

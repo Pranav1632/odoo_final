@@ -49,9 +49,9 @@ export function EmployeesList() {
         const list = Array.isArray(data) ? data : [];
         const mapped = list.map((emp) => ({
           id: emp.id,
-          fullName: emp.name,
+          fullName: emp.name || 'Unnamed',
           employeeId: emp.id,
-          workEmail: `${emp.name.toLowerCase().replace(/\s+/g, '.')}@company.com`,
+          workEmail: `${(emp.name || 'user').toLowerCase().replace(/\s+/g, '.')}@company.com`,
           departmentId: emp.department || 'Engineering',
           jobPositionId: emp.jobPosition || 'Developer',
           scheduleName: emp.schedule?.name || emp.scheduleId || 'Standard',
@@ -222,6 +222,12 @@ export function EmployeesList() {
         )}
       </div>
 
+      {error && (
+        <div className="badge-error rounded-xl px-4 py-3 text-sm">
+          Failed to load employees: {error}
+        </div>
+      )}
+
       {viewMode === 'list' ? (
         <Card>
           <CardBody className="p-0">
@@ -271,7 +277,7 @@ export function EmployeesList() {
                           <Avatar name={emp.fullName} size="sm" />
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-gray-900 text-sm truncate">{emp.fullName}</p>
-                            <p className="text-xs text-gray-500 truncate">{jobPositions.find(p => p.id === emp.jobPositionId)?.name || emp.jobPositionId}</p>
+                            <p className="text-xs text-gray-500 truncate">{emp.jobPositionId || 'Staff'}</p>
                           </div>
                         </div>
                         <div className="flex justify-between items-center pt-1">

@@ -119,7 +119,8 @@ export function TimeOffList() {
     if (!newReqStart || !newReqEnd) return 1;
     const start = new Date(newReqStart);
     const end = new Date(newReqEnd);
-    const diffTime = Math.abs(end - start);
+    const diffTime = end - start;
+    if (diffTime < 0) return 0;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return diffDays > 0 ? diffDays : 1;
   }, [newReqStart, newReqEnd]);
@@ -149,6 +150,10 @@ export function TimeOffList() {
     setModalError('');
     if (!newReqEmployee || !newReqType || !newReqStart || !newReqEnd) {
       setModalError('All fields are required.');
+      return;
+    }
+    if (new Date(newReqEnd) < new Date(newReqStart)) {
+      setModalError('End date cannot be before start date.');
       return;
     }
 

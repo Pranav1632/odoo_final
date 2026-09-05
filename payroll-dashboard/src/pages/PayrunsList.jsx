@@ -148,7 +148,6 @@ export function PayrunsList() {
         </Badge>
       );
     }},
-    { key: 'createdBy', header: 'Created By', width: '140px' },
     { key: 'actions', header: 'Actions', width: '120px', render: (row) => (
       <Button variant="ghost" size="sm" onClick={() => navigate(`/payroll/payruns/${row.id}`)}>View</Button>
     )},

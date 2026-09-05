@@ -25,10 +25,12 @@ export const sendPayslipsWorker = new Worker<SendPayslipsJobData>(
   async (job) => {
     const { payrunId, requestedByUserId } = job.data;
 
+    // Only pick up payslips still awaiting send — 'paid' ones were already sent by a
+    // prior run of this job, and re-including them here would re-email and re-log them.
     const payslips = await prisma.payslip.findMany({
       where: {
         payrunId,
-        status: { in: ['validated', 'paid'] },
+        status: 'validated',
       },
       include: {
         employee: {
@@ -40,6 +42,7 @@ export const sendPayslipsWorker = new Worker<SendPayslipsJobData>(
     });
 
     let sent = 0;
+    const sentIds: string[] = [];
 
     for (const payslip of payslips) {
       const email = payslip.employee.user?.email;
@@ -56,11 +59,15 @@ export const sendPayslipsWorker = new Worker<SendPayslipsJobData>(
       // LOCAL DEMO ONLY — do NOT call any external email API
       console.log(`[PAYSLIP SEND] Would email payslip ${payslip.id} to ${email}`);
 
-      await prisma.payslip.update({
-        where: { id: payslip.id },
+      sentIds.push(payslip.id);
+      sent++;
+    }
+
+    if (sentIds.length > 0) {
+      await prisma.payslip.updateMany({
+        where: { id: { in: sentIds } },
         data: { status: 'paid' },
       });
-      sent++;
     }
 
     await writeAuditLog({

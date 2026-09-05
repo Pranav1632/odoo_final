@@ -42,7 +42,7 @@ router.get(
 router.post(
   '/types',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const body = typeCreateSchema.parse(req.body);
     const type = await prisma.timeOffType.create({ data: body });
@@ -54,7 +54,7 @@ router.post(
 router.patch(
   '/types/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     const body = typeUpdateSchema.parse(req.body);
@@ -70,7 +70,7 @@ router.patch(
 router.delete(
   '/types/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     await prisma.timeOffType.delete({ where: { id } });
@@ -117,6 +117,7 @@ router.get(
 
     // EMPLOYEE can only see their own
     if (session.role === 'EMPLOYEE') {
+      if (!session.employeeId) return res.json([]);
       whereClause.employeeId = session.employeeId;
     } else if (employeeId) {
       whereClause.employeeId = employeeId;
@@ -145,7 +146,7 @@ router.get(
 router.post(
   '/allocations',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const body = allocationCreateSchema.parse(req.body);
     const allocation = await prisma.allocation.create({
@@ -166,7 +167,7 @@ router.post(
 router.patch(
   '/allocations/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     const body = allocationUpdateSchema.parse(req.body);
@@ -205,6 +206,7 @@ router.get(
 
     // EMPLOYEE can only see their own
     if (session.role === 'EMPLOYEE') {
+      if (!session.employeeId) return res.json([]);
       whereClause.employeeId = session.employeeId;
     } else if (employeeId) {
       whereClause.employeeId = employeeId;
@@ -283,7 +285,7 @@ router.get(
 router.patch(
   '/requests/:id/approve',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
     const id = req.params.id as string;
@@ -346,7 +348,7 @@ router.patch(
 router.patch(
   '/requests/:id/refuse',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
     const id = req.params.id as string;

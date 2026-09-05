@@ -5,6 +5,15 @@ import {
 } from '../components/UI';
 import { systemLogsApi } from '../lib/api';
 
+function parseDetails(details) {
+  if (typeof details !== 'string') return details || {};
+  try {
+    return JSON.parse(details || '{}');
+  } catch {
+    return {};
+  }
+}
+
 export function AuditLog() {
   const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'error'
   const [userFilter, setUserFilter] = useState('all');
@@ -32,7 +41,7 @@ export function AuditLog() {
           action: l.action,
           entityType: l.entityType,
           entityId: l.entityId,
-          details: typeof l.details === 'string' ? JSON.parse(l.details || '{}') : (l.details || {}),
+          details: parseDetails(l.details),
         })));
       }
       const eLogs = errorRes.data || (Array.isArray(errorRes) ? errorRes : []);

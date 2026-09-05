@@ -86,12 +86,14 @@ export function EmployeeView() {
   const empTimeOff = employee.timeOffRequests || [];
   const empAttendance = employee.attendances || [];
 
-  // Counts for smart buttons
+  // Counts for smart buttons — the API only returns the full `contracts` array plus
+  // aggregate `_count` for the rest (attendances/timeOffRequests/allocations aren't
+  // fetched in full here), so those three must come from _count, not array length.
   const counts = {
-    contracts: empContracts.length,
-    attendance: empAttendance.length,
-    timeOff: empTimeOff.length,
-    allocations: empAllocations.length,
+    contracts: employee._count?.contracts ?? empContracts.length,
+    attendance: employee._count?.attendances ?? empAttendance.length,
+    timeOff: employee._count?.timeOffRequests ?? empTimeOff.length,
+    allocations: employee._count?.allocations ?? empAllocations.length,
   };
 
   return (
@@ -99,7 +101,7 @@ export function EmployeeView() {
       <Breadcrumb items={[
         { label: 'Home', href: '/' },
         { label: 'Employees', href: '/employees' },
-        { label: employee.fullName },
+        { label: employee.name || employee.fullName },
       ]} />
 
       <PageHeader
@@ -264,7 +266,7 @@ export function EmployeeView() {
         title="Deactivate Employee"
         size="sm"
       >
-        <p className="text-gray-600 text-sm">Are you sure you want to deactivate {employee.fullName}? This will set their employment status to Inactive.</p>
+        <p className="text-gray-600 text-sm">Are you sure you want to deactivate {employee.name || employee.fullName}? This will set their employment status to Inactive.</p>
         <div className="modal-footer pt-4">
           <Button variant="secondary" onClick={() => setDeactivateModal(false)}>Cancel</Button>
           <Button variant="danger" onClick={handleDeactivate}>Deactivate</Button>

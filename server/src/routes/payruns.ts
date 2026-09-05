@@ -37,10 +37,17 @@ router.get(
   requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (_req, res) => {
     const payruns = await prisma.payrun.findMany({
-      include: { _count: { select: { payslips: true } } },
+      include: {
+        _count: { select: { payslips: true } },
+        payslips: { select: { netSalary: true } },
+      },
       orderBy: { periodStart: 'desc' },
     });
-    res.json(payruns);
+    const result = payruns.map(({ payslips, ...payrun }) => ({
+      ...payrun,
+      totalNet: payslips.reduce((sum, p) => sum + (p.netSalary ?? 0), 0),
+    }));
+    res.json(result);
   })
 );
 
@@ -80,6 +87,47 @@ router.post(
     });
 
     res.status(201).json(payrun);
+  })
+);
+
+// ---------------------------------------------------------------------------
+// GET /api/payruns/eligible-employees?periodStart=&periodEnd=
+// Same period-aware eligibility check as :id/eligible-employees, usable during
+// wizard Step 2 before a Payrun record exists yet. Registered before /:id so
+// Express doesn't match "eligible-employees" as an :id path segment.
+// Roles: HR_PAYROLL_USER, HR_PAYROLL_MANAGER, ADMIN
+// ---------------------------------------------------------------------------
+const eligibleEmployeesQuerySchema = z.object({
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+});
+
+router.get(
+  '/eligible-employees',
+  requireAuth,
+  requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  asyncHandler(async (req, res) => {
+    const { periodStart, periodEnd } = eligibleEmployeesQuerySchema.parse(req.query);
+
+    const allEmployees = await prisma.employee.findMany({
+      where: { status: 'active' },
+      select: { id: true, name: true, department: true, bankAccountNumber: true },
+    });
+
+    const results = await Promise.all(
+      allEmployees.map(async (emp) => {
+        const contract = await getActiveContractForPeriod(
+          emp.id,
+          new Date(periodStart),
+          new Date(periodEnd)
+        );
+        return contract
+          ? { ...emp, contractId: contract.id, wage: contract.wage }
+          : null;
+      })
+    );
+
+    res.json(results.filter(Boolean));
   })
 );
 
@@ -245,8 +293,8 @@ router.post(
     });
 
     if (!payrun) throw new ApiError(404, 'Payrun not found');
-    if (payrun.status === 'paid') {
-      throw new ApiError(400, 'Cannot recompute a paid payrun');
+    if (payrun.status === 'paid' || payrun.status === 'validated') {
+      throw new ApiError(400, `Cannot recompute a ${payrun.status} payrun`);
     }
 
     // Process each payslip in parallel
@@ -472,13 +520,25 @@ router.post(
         requestedByUserId: session.userId,
       });
     } catch (err) {
-      // Graceful degradation when Redis is unreachable — return 503, not 500
-      const message = (err as Error).message ?? '';
+      // Graceful degradation when Redis is unreachable — return 503, not 500.
+      // A connection failure here typically surfaces as a Node AggregateError
+      // (from net's internalConnectMultiple) whose own .message is empty — the
+      // real ECONNREFUSED/code lives on the error itself or its nested .errors
+      // array, not in .message, so check all of those rather than .message alone.
+      const anyErr = err as { message?: string; code?: string; errors?: Array<{ code?: string; message?: string }> };
+      const haystack = [
+        anyErr.message,
+        anyErr.code,
+        ...(anyErr.errors ?? []).flatMap((e) => [e.message, e.code]),
+      ]
+        .filter(Boolean)
+        .join(' ');
       if (
-        message.includes('ECONNREFUSED') ||
-        message.includes('connect') ||
-        message.includes('NOAUTH') ||
-        message.includes('redis')
+        haystack.includes('ECONNREFUSED') ||
+        haystack.includes('ETIMEDOUT') ||
+        haystack.includes('connect') ||
+        haystack.includes('NOAUTH') ||
+        haystack.includes('redis')
       ) {
         return res.status(503).json({ error: 'Queue unavailable — Redis is unreachable' });
       }

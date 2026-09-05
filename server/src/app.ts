@@ -43,7 +43,7 @@ export function createApp() {
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          callback(null, true); // Fallback to allow dev requests
+          callback(new Error('Not allowed by CORS'));
         }
       },
       credentials: true,

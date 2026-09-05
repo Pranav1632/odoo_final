@@ -30,7 +30,11 @@ export function Profile() {
     };
     fetchProfile();
     return () => { isMounted = false; };
-  }, [session]);
+    // getSession() returns a new object reference on every render, so depending on
+    // `session` itself would re-run this effect (and its state updates) in a loop.
+    // The fetch only actually depends on the employeeId it reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.employeeId]);
 
   const fullName = employee?.name || session?.name || 'Administrator';
   const email = employee?.userId ? `${(employee.name || 'admin').toLowerCase().replace(/\s+/g, '.')}@peoplepay360.com` : (session?.email || 'admin@peoplepay360.com');

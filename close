@@ -1,0 +1,227 @@
+[33mcommit 639a4d47db63a94f7869e83749e917fb7bab3c99[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 19:15:23 2026 +0530
+
+    fix(auth, ui): return userId in auth payload, fix session mapping, update dashboard charts to squared design
+
+[33mcommit e6222c1c2f49e3a2a86d4dd45f63b8c3bf75949d[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 18:47:43 2026 +0530
+
+    Fix: Untrack .playwright-mcp log and artifact files, update .gitignore
+
+[33mcommit 4847e519587ba31727682503ecae01eb4af70eb3[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 18:45:31 2026 +0530
+
+    Fix: Untrack graphify output and cache files, update .gitignore
+
+[33mcommit 703681ea22e9af937277441928d42876af65767e[m
+Author: Pranav1632 <pranavgaikwad1632@gmail.com>
+Date:   Sat Sep 5 18:44:47 2026 +0530
+
+    fix: remove unwanted .pgdata directory and powershell.cmd from git tracking
+
+[33mcommit 7dd01fe29979d44d3528ee9c6e7f0867c300db1a[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 18:43:25 2026 +0530
+
+    Fix: Remove unneeded tracked database files (.pgdata) and powershell.cmd, update .gitignore
+
+[33mcommit 2607ead8cb1a66844881019b1be9145200f65129[m
+Merge: d73277b c9052cc
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 18:36:24 2026 +0530
+
+    Merge branch 'main' of https://github.com/Pranav1632/odoo_final
+
+[33mcommit d73277b9330c8f2bf087cfa17fe13b13a8d54f83[m
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 18:35:50 2026 +0530
+
+    Remove tracked files that should be ignored per .gitignore (md files, hackathon artifacts)
+
+[33mcommit c9052ccee81d1dbba164616caffffbdc0445e375[m
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 18:16:28 2026 +0530
+
+    Fix: Fixed Login Role missaligned content
+    
+    Merge Successful
+
+[33mcommit 2532371bbbf5e7dce046023e3bd397827a89a603[m
+Merge: b642fd9 19b22ff
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 18:14:41 2026 +0530
+
+    Merge branch 'main' of https://github.com/Pranav1632/odoo_final
+
+[33mcommit b642fd9f20bb2ed0a767f182a9e72b88478a71ee[m
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 18:13:34 2026 +0530
+
+    Fix: Fixed Login Role missaligned content
+    
+    Merge Successful
+
+[33mcommit 19b22ffe7453c020e338420292fe9438f65ad730[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 18:07:28 2026 +0530
+
+    Changes
+
+[33mcommit 439201378179bed3480deae2cfc5c30afd8dcbb9[m
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 18:05:21 2026 +0530
+
+    fix: employee form crash and register role overwrite bug
+
+[33mcommit 2654ecc812793b83573c1a417176b02e9057d240[m
+Merge: 41dbacf 4432b34
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 17:38:29 2026 +0530
+
+    merge: integrate feature/person-b-payroll (Person A+B+C, live DB, mock data removed, 82/82 tests)
+
+[33mcommit 4432b340651a3fbe3356f8ae4e2d192de42befb6[m
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 17:38:18 2026 +0530
+
+    feat: full integration - live PostgreSQL DB, mock data removed, real-time frontend, 82/82 tests passing
+
+[33mcommit b063b8eabb341549f68f6912a13d4bb187aeff52[m
+Merge: c544f7c 4b91cb6
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 16:43:46 2026 +0530
+
+    Merge branch 'frontend-demo' into feature/person-b-payroll
+
+[33mcommit 4b91cb616bcb4c03199dfc89185c39345bb6d24e[m
+Merge: cd8e79e 41dbacf
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 16:27:06 2026 +0530
+
+    Merge branch 'main' of https://github.com/Pranav1632/odoo_final into frontend-demo
+
+[33mcommit c544f7c36da2d196072e246ed06a78fce38b43a6[m
+Merge: 38893da 41dbacf
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 16:25:12 2026 +0530
+
+    Merge branch 'main' of https://github.com/Pranav1632/odoo_final into feature/person-b-payroll
+
+[33mcommit cd8e79efa9b18e90971018b72d1346fa2ba25e21[m[33m ([m[1;31morigin/frontend-demo[m[33m)[m
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 16:21:26 2026 +0530
+
+    Feat: Added new Login Pages with RBAC
+    
+    Fix: Database mismatches and mapping issues
+
+[33mcommit 38893daf527cfa528e311d8c8fa721a6af76f89b[m[33m ([m[1;31morigin/feature/person-b-payroll[m[33m, [m[1;32mfeature/person-b-payroll[m[33m)[m
+Author: Pranav1632 <pranavgaikwad1632@gmail.com>
+Date:   Sat Sep 5 16:04:04 2026 +0530
+
+    test(payroll): add dedicated salaryRules.test.ts with full regression tests for PATCH merge-and-revalidate behavior
+
+[33mcommit 41dbacfac415d801dbbdbbc07d5e11fd384e3901[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 16:03:29 2026 +0530
+
+    fix(frontend): restore getSession import in EmployeesList
+
+[33mcommit 7be1baa6abc9b9444df879d71b9010cd87b80caf[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 16:00:43 2026 +0530
+
+    fix(frontend): add missing authApi import to page components
+
+[33mcommit 1e3577f879760eb96839484f25841c96791c2c8c[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:58:50 2026 +0530
+
+    fix(frontend): remove mock fallbacks and enable JWT auto-login
+
+[33mcommit bf9414a0f3fe33d13add7e3b7453bb8314c8479b[m
+Author: Pranav1632 <pranavgaikwad1632@gmail.com>
+Date:   Sat Sep 5 15:58:43 2026 +0530
+
+    test(payroll): add IDOR test verifying EMPLOYEE role cannot query other employees payslips
+
+[33mcommit 1d7ffe42a44ed88b1ad40e9904950ccd6ac04167[m
+Author: Pranav1632 <pranavgaikwad1632@gmail.com>
+Date:   Sat Sep 5 15:55:31 2026 +0530
+
+    test(payroll): replace placeholder tests with real assertions for netSalary recompute and Redis 503 error handling
+
+[33mcommit cb84b2831eedc2a2795bbc0cee8426c35e598f77[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:53:09 2026 +0530
+
+    fix(server): allow localhost:5173 (Vite frontend) in CORS middleware
+
+[33mcommit 21245e7944a7398ece51687d3c4e2e8b738ddb84[m
+Author: Pranav1632 <pranavgaikwad1632@gmail.com>
+Date:   Sat Sep 5 15:50:34 2026 +0530
+
+    fix(payroll): validate merged fields on salary rule PATCH to prevent broken zero calculation
+
+[33mcommit 9918bebf175bf8072ef778b089f8e30d8805fe1b[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:50:17 2026 +0530
+
+    fix(frontend): wire Employees and Contracts pages to Express backend API
+
+[33mcommit 92130e8bbfb7ba2c9e466857ebc864607b2d1f15[m
+Merge: 32852c8 46686b0
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:38:05 2026 +0530
+
+    merge: integrate remote origin/main updates
+
+[33mcommit 32852c866683c16fc560f057b9a058ee4552e6a0[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:35:22 2026 +0530
+
+    fix: install @types/react and fix salaryStructures param types
+
+[33mcommit 38583d517b699ff2c0da991a41f8cb1062bfd81f[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:34:06 2026 +0530
+
+    fix: add missing Person B audit action types to AuditAction enum
+
+[33mcommit afe604ea304f190f73a46eac9ae88620f3494cc7[m
+Merge: 58c12ee 3fa7b08
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:31:41 2026 +0530
+
+    merge: integrate Person C frontend UI & dashboard (Step 3)
+
+[33mcommit 58c12ee0f55f9c3b31a7ff13d253fad55a5abc0e[m
+Merge: 7cf9a19 664ffaa
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:30:06 2026 +0530
+
+    merge: integrate Person B payroll engine & processing features (Step 2)
+
+[33mcommit 7cf9a1988a920f344115697b4bbdc071142fe7c6[m
+Merge: e15ac19 8ffad4f
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:27:57 2026 +0530
+
+    merge: integrate Person A data & core HR features (Step 1)
+
+[33mcommit 8ffad4fc782ab72fe6e3d31832e1215a7bf7ee8f[m
+Author: Dev-43 <deveshdolas9@gmail.com>
+Date:   Sat Sep 5 15:26:24 2026 +0530
+
+    fix(person-a): update seed, app health endpoint, and tsconfig types
+
+[33mcommit 3fa7b08d375b30ff4e7b55a7c944be4559aeb8af[m
+Author: CoderOriz <prathameshjoshi808@gmail.com>
+Date:   Sat Sep 5 15:22:24 2026 +0530
+
+    Fix: Fixed Sidebar and structure issues
+
+[33mcommit 258aadc0380b4548c8d8533125f6faa6e6abd6a0[m

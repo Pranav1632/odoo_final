@@ -41,14 +41,20 @@ export interface PayslipForPdf {
  * Content: header, employee/payrun meta, grouped salary lines, net salary.
  */
 export async function generatePayslipPdf(payslip: PayslipForPdf): Promise<Buffer> {
-  const categories = ['Basic', 'Allowance', 'Gross', 'Deduction', 'Net'];
+  // Preferred display order for the well-known categories; any other category a
+  // salary rule is configured with still gets its own group instead of being
+  // silently dropped from the printed payslip.
+  const preferredOrder = ['Basic', 'Allowance', 'Gross', 'Deduction', 'Net'];
+  const presentCategories = [...new Set(payslip.lines.map((l) => l.category))];
+  const categories = [
+    ...preferredOrder.filter((cat) => presentCategories.includes(cat)),
+    ...presentCategories.filter((cat) => !preferredOrder.includes(cat)),
+  ];
 
-  const grouped = categories
-    .map((cat) => ({
-      category: cat,
-      lines: payslip.lines.filter((l) => l.category === cat),
-    }))
-    .filter((g) => g.lines.length > 0);
+  const grouped = categories.map((cat) => ({
+    category: cat,
+    lines: payslip.lines.filter((l) => l.category === cat),
+  }));
 
   const period = new Date(payslip.payrun.periodStart).toLocaleDateString('en-IN', {
     month: 'long',

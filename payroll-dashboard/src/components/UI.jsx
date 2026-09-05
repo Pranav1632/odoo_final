@@ -539,11 +539,15 @@ export const KPICard = ({ title, value, trend, trendLabel, icon, className = '',
       {icon && <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'var(--color-accent-50)', color: 'var(--color-accent-600)' }}>{icon}</div>}
     </div>
     <p className="kpi-value">{value}</p>
-    {trend !== undefined && (
+    {trend !== undefined && trend !== null && (
       <div className="mt-2 flex items-center gap-1.5">
-        <span className={`badge ${trend > 0 ? 'badge-success' : trend < 0 ? 'badge-error' : 'badge-gray'}`}>
-          {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}%
-        </span>
+        {typeof trend === 'number' ? (
+          <span className={`badge ${trend > 0 ? 'badge-success' : trend < 0 ? 'badge-error' : 'badge-gray'}`}>
+            {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}%
+          </span>
+        ) : (
+          <span className="badge badge-gray">{trend}</span>
+        )}
         <span className="text-xs" style={{ color: 'var(--color-gray-500)' }}>{trendLabel || 'vs last period'}</span>
       </div>
     )}

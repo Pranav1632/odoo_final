@@ -200,19 +200,11 @@ router.get(
       averageSalary: payslipCount > 0 ? Math.round(totalNet / payslipCount) : 0,
       approvedTimeOff,
       departmentCost: deptCostList,
-      monthlyTrend: monthlyTrend.length > 0 ? monthlyTrend : [
-        { month: 'Jul', totalNet: 142000, payslipCount: 50 },
-        { month: 'Aug', totalNet: 148000, payslipCount: 50 },
-      ],
-      attendanceOverview: attendanceOverview.length > 0 ? attendanceOverview : [
-        { status: 'Present', count: 1200, percentage: 85 },
-        { status: 'Late', count: 150, percentage: 11 },
-        { status: 'Absent', count: 58, percentage: 4 },
-      ],
-      timeOffByType: timeOffByType.length > 0 ? timeOffByType : [
-        { type: 'Annual Leave', days: 45, color: '#16a34a' },
-        { type: 'Sick Leave', days: 22, color: '#2563eb' },
-      ],
+      // Live data only — an empty period/department renders as an explicit empty
+      // state on the frontend rather than being masked by fabricated numbers.
+      monthlyTrend,
+      attendanceOverview,
+      timeOffByType,
       alerts: {
         pendingPayruns,
         missingBankCount,

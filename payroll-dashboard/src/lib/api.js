@@ -131,6 +131,8 @@ export const payrunsApi = {
   getById: (id) => apiRequest(`/payruns/${id}`),
   create: (data) => apiRequest('/payruns', { method: 'POST', body: JSON.stringify(data) }),
   getEligibleEmployees: (id) => apiRequest(`/payruns/${id}/eligible-employees`),
+  getEligibleEmployeesForPeriod: (periodStart, periodEnd) =>
+    apiRequest(`/payruns/eligible-employees?periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`),
   attachEmployees: (id, employeeIds) => apiRequest(`/payruns/${id}/employees`, { method: 'POST', body: JSON.stringify({ employeeIds }) }),
   compute: (id) => apiRequest(`/payruns/${id}/compute`, { method: 'POST' }),
   validate: (id) => apiRequest(`/payruns/${id}/validate`, { method: 'POST' }),

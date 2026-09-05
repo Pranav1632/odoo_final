@@ -61,14 +61,16 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
   name: z.string().min(1).optional(),
-  role: z.enum(['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER', 'HR_MANAGER', 'EMPLOYEE']).optional(),
 });
 
 // POST /api/auth/register
+// Self-registration always creates an EMPLOYEE account. Role assignment/escalation
+// (ADMIN, HR_*) is an Admin-only action performed after the account exists, not a
+// caller-supplied field on the public registration endpoint.
 router.post(
   '/register',
   asyncHandler(async (req, res) => {
-    const { email, password, name, role = 'EMPLOYEE' } = registerSchema.parse(req.body);
+    const { email, password, name } = registerSchema.parse(req.body);
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(409).json({ error: 'Email already registered' });
@@ -79,7 +81,7 @@ router.post(
       data: {
         email,
         password: hashedPassword,
-        role: role as any,
+        role: 'EMPLOYEE',
         employee: {
           create: {
             name: name || email.split('@')[0],

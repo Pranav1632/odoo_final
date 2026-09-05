@@ -17,7 +17,7 @@ declare global {
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
     req.session = jwt.verify(token, process.env.JWT_SECRET!) as Session;

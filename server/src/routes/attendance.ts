@@ -44,9 +44,10 @@ router.get(
       if (employeeId && employeeId !== session.employeeId) {
         throw new ApiError(403, 'Forbidden');
       }
+      if (!session.employeeId) return res.json([]);
       const records = await prisma.attendance.findMany({
         where: {
-          employeeId: session.employeeId!,
+          employeeId: session.employeeId,
           ...(from ? { checkIn: { gte: new Date(from) } } : {}),
           ...(to ? { checkIn: { lte: new Date(to) } } : {}),
           ...(status ? { status } : {}),
@@ -145,7 +146,7 @@ router.get(
 router.patch(
   '/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     const body = updateSchema.parse(req.body);
@@ -182,7 +183,7 @@ router.patch(
 router.delete(
   '/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     await prisma.attendance.delete({ where: { id } });

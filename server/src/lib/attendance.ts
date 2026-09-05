@@ -17,5 +17,5 @@ export async function getWorkedDaysForPeriod(
   if (records.length === 0) return 30; // documented fallback — remove when attendance data exists
 
   // Count distinct calendar days with at least 4 worked hours as a "day"
-  return records.filter((r) => (r.workedHours ?? 0) >= 4).length || records.length;
+  return records.filter((r) => (r.workedHours ?? 0) >= 4).length;
 }

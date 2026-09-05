@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 const toastState = {
   toasts: [],
@@ -52,8 +52,8 @@ const toastState = {
 
 export function useToast() {
   const [toasts, setToasts] = useState(toastState.toasts);
-  
-  useState(() => toastState.subscribe(setToasts));
+
+  useEffect(() => toastState.subscribe(setToasts), []);
   
   const toast = useCallback((options) => {
     if (typeof options === 'string') {

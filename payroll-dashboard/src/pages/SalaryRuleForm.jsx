@@ -47,7 +47,7 @@ export function SalaryRuleForm() {
         setName(rule.name || '');
         setCode(rule.code || '');
         setCategory(rule.category || 'Allowance');
-        setSequence(rule.sequence ? rule.sequence.toString() : '1');
+        setSequence(rule.sequence !== null && rule.sequence !== undefined ? rule.sequence.toString() : '1');
         setMethod(rule.computationMethod || 'percentage');
         setAmount(rule.amount !== null && rule.amount !== undefined ? rule.amount.toString() : '');
         setOfRule(rule.percentageOf || 'BASIC');
@@ -98,7 +98,7 @@ export function SalaryRuleForm() {
         name,
         code,
         category,
-        sequence: parseInt(sequence, 10) || 1,
+        sequence: Number.isNaN(parseInt(sequence, 10)) ? 1 : parseInt(sequence, 10),
         computationMethod: method,
         amount: method === 'fixed' ? parseFloat(amount) : null,
         percentageOf: method === 'percentage' ? ofRule : null,

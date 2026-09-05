@@ -61,6 +61,7 @@ export function EmployeeForm() {
   const navigate = useNavigate();
   const isEdit = !!id;
   const [formData, setFormData] = useState(initialFormData);
+  const [employee, setEmployee] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -81,6 +82,7 @@ export function EmployeeForm() {
       employeesApi.getById(id)
         .then(emp => {
           if (emp) {
+            setEmployee(emp);
             setFormData({
               fullName: emp.name || '',
               dateOfBirth: '1995-01-01',
@@ -94,7 +96,12 @@ export function EmployeeForm() {
               scheduleId: emp.scheduleId || '',
               employmentStatus: emp.status === 'active' ? 'Active' : 'Inactive',
               employmentType: 'Full-time',
-              startDate: emp.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+              // Employee has no createdAt/startDate of its own — the earliest linked
+              // contract (contracts are ordered startDate desc, so the last entry is
+              // the oldest) is the closest real signal for when they joined.
+              startDate: emp.contracts?.length
+                ? emp.contracts[emp.contracts.length - 1].startDate?.split('T')[0]
+                : new Date().toISOString().split('T')[0],
               endDate: '',
               workEmail: `${(emp.name || 'user').toLowerCase().replace(/\s+/g, '.')}@company.com`,
               workPhone: '+1-555-0199',
@@ -197,8 +204,8 @@ export function EmployeeForm() {
       <Breadcrumb items={breadcrumbs} />
       
       <PageHeader
-        title={isEdit ? `Edit Employee: ${employee?.fullName}` : 'New Employee'}
-        subtitle={isEdit ? `Employee ID: ${employee?.employeeId}` : 'Create a new employee record'}
+        title={isEdit ? `Edit Employee: ${employee?.name || ''}` : 'New Employee'}
+        subtitle={isEdit ? `Employee ID: ${employee?.id || ''}` : 'Create a new employee record'}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleDiscard}>Discard</Button>
@@ -237,7 +244,7 @@ export function EmployeeForm() {
                     />
                     <Input
                       label="Employee ID"
-                      value={isEdit ? employee?.employeeId : 'EMP-AUTO'}
+                      value={isEdit ? employee?.id : 'EMP-AUTO'}
                       disabled
                       className="bg-gray-50 dark:bg-gray-800"
                     />
@@ -423,14 +430,18 @@ export function EmployeeForm() {
                 </CardHeader>
                 <CardBody className="space-y-4">
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Active Since: <span className="font-medium text-gray-900 dark:text-white">{formatDate(employee?.startDate || '')}</span>
+                    Active Since: <span className="font-medium text-gray-900 dark:text-white">
+                      {employee?.contracts?.length
+                        ? formatDate(employee.contracts[employee.contracts.length - 1].startDate)
+                        : 'N/A'}
+                    </span>
                   </div>
                   <div className="space-y-3">
                     {[
-                      { label: 'Contracts', count: employee?.contractsCount, href: `/contracts?employee=${id}`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-                      { label: 'Attendance', count: employee?.attendanceCount, href: `/attendance?employee=${id}`, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-                      { label: 'Time Off', count: employee?.timeOffCount, href: `/time-off?employee=${id}`, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-                      { label: 'Allocations', count: employee?.allocationsCount, href: `/time-off/allocations?employee=${id}`, icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+                      { label: 'Contracts', count: employee?._count?.contracts, href: `/contracts?employee=${id}`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                      { label: 'Attendance', count: employee?._count?.attendances, href: `/attendance?employee=${id}`, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                      { label: 'Time Off', count: employee?._count?.timeOffRequests, href: `/time-off?employee=${id}`, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+                      { label: 'Allocations', count: employee?._count?.allocations, href: `/time-off/allocations?employee=${id}`, icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
                     ].map((stat, index) => (
                       <a key={index} href={stat.href} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-primary-700/50 transition-colors">
                         <div className="flex items-center gap-3">

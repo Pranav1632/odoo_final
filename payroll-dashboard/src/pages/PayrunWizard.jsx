@@ -22,6 +22,8 @@ export function PayrunWizard() {
   });
   const [structures, setStructures] = useState([]);
   const [dbEmployees, setDbEmployees] = useState([]);
+  const [eligibleIds, setEligibleIds] = useState(null); // null = not loaded yet
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -42,30 +44,52 @@ export function PayrunWizard() {
 
     employeesApi.getAll()
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setDbEmployees(data);
-          setSelectedEmployees(data.slice(0, 10).map(e => e.id));
-        }
+        if (Array.isArray(data)) setDbEmployees(data);
       })
       .catch(() => {});
   }, []);
+
+  // Real, period-aware eligibility — matches exactly what the backend will use to
+  // attach payslips, instead of a local heuristic based only on contract status.
+  useEffect(() => {
+    if (step !== 2 || !formData.periodStart || !formData.periodEnd) return;
+    let cancelled = false;
+    setEligibilityLoading(true);
+    payrunsApi
+      .getEligibleEmployeesForPeriod(
+        new Date(formData.periodStart).toISOString(),
+        new Date(formData.periodEnd).toISOString()
+      )
+      .then(data => {
+        if (cancelled) return;
+        const ids = new Set(Array.isArray(data) ? data.map(e => e.id) : []);
+        setEligibleIds(ids);
+        setSelectedEmployees(prev => (prev.length > 0 ? prev : [...ids]));
+      })
+      .catch(() => {
+        if (!cancelled) setEligibleIds(new Set());
+      })
+      .finally(() => {
+        if (!cancelled) setEligibilityLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [step, formData.periodStart, formData.periodEnd]);
 
   const selectedStructure = structures.find(s => s.id === formData.salaryStructureId);
   const structureRules = selectedStructure?.rules?.length || 0;
 
   const eligibleEmployees = useMemo(() => {
-    if (!formData.salaryStructureId) return [];
     return dbEmployees.map(emp => {
-      const hasActive = emp.contracts?.some(c => c.status === 'active') ?? true;
+      const hasActive = eligibleIds ? eligibleIds.has(emp.id) : false;
       return {
         ...emp,
         fullName: emp.name || emp.fullName,
         departmentId: emp.department || 'General',
         hasValidContract: hasActive,
-        contractWarning: !hasActive ? 'No active contract' : null,
+        contractWarning: !hasActive ? 'No contract covers this period' : null,
       };
     });
-  }, [formData.salaryStructureId, dbEmployees]);
+  }, [dbEmployees, eligibleIds]);
 
   const eligibleCount = eligibleEmployees.filter(e => e.hasValidContract).length;
   const selectedCount = selectedEmployees.length;
@@ -105,8 +129,20 @@ export function PayrunWizard() {
       });
 
       if (newPayrun && newPayrun.id) {
-        await payrunsApi.attachEmployees(newPayrun.id, selectedEmployees).catch(e => console.warn(e));
-        navigate(`/payroll/payruns/${newPayrun.id}`, { replace: true });
+        let attachNotice = null;
+        try {
+          const summary = await payrunsApi.attachEmployees(newPayrun.id, selectedEmployees);
+          if (summary?.skipped > 0) {
+            // Employee selection can go stale between loading eligibility and submitting
+            // (e.g. a contract expired in the meantime) — surface it rather than silently
+            // creating a payrun with fewer payslips than employees selected.
+            attachNotice = `${summary.skipped} of ${selectedEmployees.length} selected employee(s) were skipped — no contract covers this payrun's period.`;
+          }
+        } catch (e) {
+          console.warn('Attach employees failed:', e);
+          attachNotice = e.message || 'Failed to attach selected employees.';
+        }
+        navigate(`/payroll/payruns/${newPayrun.id}`, { replace: true, state: attachNotice ? { attachNotice } : undefined });
       } else {
         navigate('/payroll/payruns', { replace: true });
       }
@@ -225,9 +261,11 @@ export function PayrunWizard() {
               
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500 font-medium">
-                  Selected: <strong>{selectedCount}</strong> of {eligibleCount} eligible employees
+                  {eligibilityLoading
+                    ? 'Checking contract eligibility for this period…'
+                    : <>Selected: <strong>{selectedCount}</strong> of {eligibleCount} eligible employees</>}
                 </span>
-                <Button variant="ghost" size="sm" onClick={handleSelectAll}>
+                <Button variant="ghost" size="sm" onClick={handleSelectAll} disabled={eligibilityLoading}>
                   {selectedCount === eligibleCount ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>

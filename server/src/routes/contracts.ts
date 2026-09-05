@@ -135,6 +135,22 @@ router.patch(
     const id = req.params.id as string;
     const body = updateSchema.parse(req.body);
 
+    // Same invariant enforced on create — cannot have two active contracts for the
+    // same employee. Applies whenever this update would result in status 'active'.
+    if (body.status === 'active') {
+      const current = await prisma.contract.findUnique({ where: { id } });
+      if (!current) throw new ApiError(404, 'Not found');
+      const existing = await prisma.contract.findFirst({
+        where: { employeeId: current.employeeId, status: 'active', id: { not: id } },
+      });
+      if (existing) {
+        return res.status(409).json({
+          error:
+            'Employee already has an active contract. Expire the existing one first.',
+        });
+      }
+    }
+
     const contract = await prisma.contract.update({
       where: { id },
       data: body as Record<string, unknown>,
