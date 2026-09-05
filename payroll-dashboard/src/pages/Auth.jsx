@@ -31,6 +31,7 @@ export function AuthPage({ onLoginSuccess }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pendingMessage, setPendingMessage] = useState('');
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -38,12 +39,8 @@ export function AuthPage({ onLoginSuccess }) {
   };
 
   const handleRoleSelect = (selectedRole) => {
-    if (mode === 'register') {
-      // In register mode, only update the role — don't overwrite what the user typed
-      handleChange('role', selectedRole);
-      return;
-    }
-    // In login mode, auto-fill credentials from the seeded demo account
+    // Login mode only (register has no role selector) — auto-fill credentials
+    // from the seeded demo account.
     const seedUser = SEED_USERS.find(u => u.role === selectedRole);
     if (seedUser) {
       setFormData({
@@ -72,13 +69,16 @@ export function AuthPage({ onLoginSuccess }) {
         onLoginSuccess(session);
       } else {
         if (!formData.name.trim()) throw new Error('Full Name is required');
-        const session = await registerUser({
+        const result = await registerUser({
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          role: formData.role,
         });
-        onLoginSuccess(session);
+        if (result.pending) {
+          setPendingMessage(result.message);
+        } else {
+          onLoginSuccess(result);
+        }
       }
     } catch (err) {
       setError(err.message || 'Authentication failed');
@@ -110,7 +110,7 @@ export function AuthPage({ onLoginSuccess }) {
           <div className="flex items-center justify-center gap-2 mb-6 border-b border-gray-100 pb-4">
             <button
               type="button"
-              onClick={() => { setMode('login'); setError(''); setFormData({ name: '', email: 'payroll.manager@peoplepay360.com', password: 'Manager@123', role: 'HR_PAYROLL_MANAGER' }); }}
+              onClick={() => { setMode('login'); setError(''); setPendingMessage(''); setFormData({ name: '', email: 'payroll.manager@peoplepay360.com', password: 'Manager@123', role: 'HR_PAYROLL_MANAGER' }); }}
               className={`pb-1 text-sm font-semibold transition-colors relative ${
                 mode === 'login' ? 'text-ink-900 border-b-2 border-ink-900' : 'text-gray-400 hover:text-gray-600'
               }`}
@@ -120,7 +120,7 @@ export function AuthPage({ onLoginSuccess }) {
             <span className="text-gray-300">·</span>
             <button
               type="button"
-              onClick={() => { setMode('register'); setError(''); setFormData({ name: '', email: '', password: '', role: 'EMPLOYEE' }); }}
+              onClick={() => { setMode('register'); setError(''); setPendingMessage(''); setFormData({ name: '', email: '', password: '', role: 'EMPLOYEE' }); }}
               className={`pb-1 text-sm font-semibold transition-colors relative ${
                 mode === 'register' ? 'text-ink-900 border-b-2 border-ink-900' : 'text-gray-400 hover:text-gray-600'
               }`}
@@ -136,6 +136,25 @@ export function AuthPage({ onLoginSuccess }) {
             </div>
           )}
 
+          {pendingMessage ? (
+            <div className="text-center space-y-4 py-2">
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-ink-900">Registration submitted</h3>
+                <p className="text-xs text-gray-500 mt-1">{pendingMessage}</p>
+              </div>
+              <Button
+                variant="secondary"
+                type="button"
+                className="w-full"
+                onClick={() => { setMode('login'); setPendingMessage(''); setFormData({ name: '', email: '', password: '', role: 'HR_PAYROLL_MANAGER' }); }}
+              >
+                Back to Sign In
+              </Button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <Input
@@ -195,28 +214,26 @@ export function AuthPage({ onLoginSuccess }) {
               </div>
             </div>
 
-            {/* 3. Role Dropdown */}
-            <div>
-              <Select
-                label={mode === 'login' ? 'Role' : 'Requested Role'}
-                value={formData.role}
-                onChange={(e) => handleRoleSelect(e.target.value)}
-                options={
-                  mode === 'login'
-                    ? SEED_USERS.map((user) => ({
-                        value: user.role,
-                        label: formatRoleName(user.role),
-                      }))
-                    : [
-                        { value: 'EMPLOYEE', label: 'Employee' },
-                        { value: 'HR_MANAGER', label: 'HR Manager' },
-                        { value: 'HR_PAYROLL_USER', label: 'HR Payroll User' },
-                        { value: 'HR_PAYROLL_MANAGER', label: 'HR Payroll Manager' },
-                        { value: 'ADMIN', label: 'Admin' },
-                      ]
-                }
-              />
-            </div>
+            {/* 3. Role Dropdown — login only; a self-registered account can't choose
+                its own role, it always starts as a pending Employee account and
+                waits for an Admin to approve it (and assign a role) */}
+            {mode === 'login' ? (
+              <div>
+                <Select
+                  label="Role"
+                  value={formData.role}
+                  onChange={(e) => handleRoleSelect(e.target.value)}
+                  options={SEED_USERS.map((user) => ({
+                    value: user.role,
+                    label: formatRoleName(user.role),
+                  }))}
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 -mt-1">
+                New accounts start as an Employee and require Admin approval before you can sign in.
+              </p>
+            )}
 
             <Button
               variant="dark"
@@ -227,6 +244,7 @@ export function AuthPage({ onLoginSuccess }) {
               {mode === 'login' ? 'Sign In to Dashboard' : 'Create Account'}
             </Button>
           </form>
+          )}
         </div>
       </div>
     </div>

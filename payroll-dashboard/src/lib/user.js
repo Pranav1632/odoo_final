@@ -123,14 +123,19 @@ export async function authenticateUser({ email, password }) {
 
 /**
  * Register account with real backend (POST /api/auth/register).
+ *
+ * Self-registered accounts always land as 'pending' — they cannot log in until
+ * an Admin/HR approves them (see UserManagement.jsx). This returns
+ * { pending: true, message } in that case instead of a session; there is
+ * currently no server-side path that returns a token from register.
  */
-export async function registerUser({ name, email, password, role = 'EMPLOYEE' }) {
+export async function registerUser({ name, email, password }) {
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
   try {
     const res = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role })
+      body: JSON.stringify({ name, email, password })
     });
 
     const data = await res.json().catch(() => ({}));
@@ -139,10 +144,14 @@ export async function registerUser({ name, email, password, role = 'EMPLOYEE' })
       throw new Error(data.error || data.message || 'Failed to create account');
     }
 
+    if (data.pending || !data.token) {
+      return { pending: true, message: data.message || 'Registration submitted. Awaiting approval.' };
+    }
+
     const session = {
       userId: data.userId || data.employeeId || 'emp-user',
       email: data.email || email,
-      role: data.role || role,
+      role: data.role || 'EMPLOYEE',
       name: data.name || name,
       employeeId: data.employeeId || null,
       token: data.token

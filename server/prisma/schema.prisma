@@ -12,6 +12,7 @@ model User {
   email    String    @unique
   password String
   role     Role
+  status   String    @default("pending") // pending | active | disabled
   employee Employee?
 }
 

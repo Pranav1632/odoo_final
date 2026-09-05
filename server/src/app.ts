@@ -5,6 +5,7 @@ import { errorHandler } from './middleware/errorHandler';
 
 // Person A's routes
 import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
 import employeeRoutes from './routes/employees';
 import contractRoutes from './routes/contracts';
 import scheduleRoutes from './routes/schedules';
@@ -59,6 +60,7 @@ export function createApp() {
 
   // Person A routes
   app.use('/api/auth', authRoutes);
+  app.use('/api/users', userRoutes);
   app.use('/api/employees', employeeRoutes);
   app.use('/api/contracts', contractRoutes);
   app.use('/api/schedules', scheduleRoutes);

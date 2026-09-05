@@ -102,8 +102,11 @@ export const Select = forwardRef(({
         {...props}
       >
         {placeholder && <option value="" disabled>{placeholder}</option>}
-        {options.map(opt => (
-          <option key={opt.value || opt.id} value={opt.value || opt.id}>
+        {options.map((opt, i) => (
+          // Index is appended because opt.value/opt.id can legitimately be falsy
+          // (e.g. an explicit '' "All ..." option, or a numeric 0), which would
+          // otherwise collide with other options and violate key uniqueness.
+          <option key={`${opt.value ?? opt.id ?? ''}-${i}`} value={opt.value ?? opt.id}>
             {opt.label || opt.name}
           </option>
         ))}

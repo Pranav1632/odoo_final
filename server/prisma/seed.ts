@@ -189,6 +189,7 @@ async function main() {
       email: 'admin@peoplepay360.com',
       password: hashedAdmin,
       role: Role.ADMIN,
+      status: 'active',
       employee: {
         create: {
           name: 'Admin User',
@@ -210,6 +211,7 @@ async function main() {
         email: `hr.manager${i}@peoplepay360.com`,
         password: hashedAdmin,
         role: Role.HR_MANAGER,
+        status: 'active',
         employee: {
           create: {
             name: `HR Manager ${i}`,
@@ -231,6 +233,7 @@ async function main() {
       email: 'payroll.manager@peoplepay360.com',
       password: hashedAdmin,
       role: Role.HR_PAYROLL_MANAGER,
+      status: 'active',
       employee: {
         create: {
           name: 'Payroll Manager',
@@ -250,6 +253,7 @@ async function main() {
       email: 'payroll.user@peoplepay360.com',
       password: hashedAdmin,
       role: Role.HR_PAYROLL_USER,
+      status: 'active',
       employee: {
         create: {
           name: 'Payroll User',
@@ -275,6 +279,7 @@ async function main() {
         email: `emp${i}@peoplepay360.com`,
         password: hashedEmp,
         role: Role.EMPLOYEE,
+        status: 'active',
         employee: {
           create: {
             name: `Employee ${i}`,

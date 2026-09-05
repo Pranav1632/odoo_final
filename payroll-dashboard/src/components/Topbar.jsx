@@ -13,6 +13,7 @@ const ALL_NAV_ITEMS = [
   { id: 'payslips', label: 'Payslips', href: '/payslips', roles: ['ALL'] },
   { id: 'structures', label: 'Salary Structures', href: '/salary-structures', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'] },
   { id: 'audit', label: 'Audit Log', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'] },
+  { id: 'users', label: 'User Management', href: '/users', roles: ['ADMIN'] },
 ];
 
 export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {

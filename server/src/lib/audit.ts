@@ -23,7 +23,9 @@ export type AuditAction =
   | 'UPDATE_SALARY_STRUCTURE'
   | 'DELETE_SALARY_STRUCTURE'
   | 'ATTACH_EMPLOYEES'
-  | 'REGISTER';
+  | 'REGISTER'
+  | 'APPROVE_USER'
+  | 'UPDATE_USER';
 
 
 export async function writeAuditLog(params: {

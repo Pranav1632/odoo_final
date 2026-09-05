@@ -22,6 +22,7 @@ import { SalaryRuleForm } from './pages/SalaryRuleForm';
 import { AttendanceList } from './pages/AttendanceList';
 import { TimeOffList } from './pages/TimeOffList';
 import { AuditLog } from './pages/AuditLog';
+import { UserManagement } from './pages/UserManagement';
 import { Profile } from './pages/Profile';
 import { ToastContainer } from './components/ToastContainer';
 import { getSession, logout } from './lib/user';
@@ -70,6 +71,7 @@ function Layout({ session, onLogout }) {
     { id: 'payslips', label: 'Payslips', href: '/payslips', roles: ['ALL'], icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
     { id: 'structures', label: 'Salary Structures', href: '/salary-structures', roles: ['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zm0 5h16' },
     { id: 'audit', label: 'System Logs', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { id: 'users', label: 'User Management', href: '/users', roles: ['ADMIN'], icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
   ].filter(item => item.roles.includes('ALL') || item.roles.includes(userRole));
 
   return (
@@ -324,6 +326,13 @@ function Layout({ session, onLogout }) {
                   </ProtectedRoute>
                 } />
                 
+                {/* User Management */}
+                <Route path="/users" element={
+                  <ProtectedRoute session={session} allowedRoles={['ADMIN']}>
+                    <UserManagement />
+                  </ProtectedRoute>
+                } />
+
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

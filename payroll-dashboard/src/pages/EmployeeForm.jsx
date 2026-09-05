@@ -244,7 +244,7 @@ export function EmployeeForm() {
                     />
                     <Input
                       label="Employee ID"
-                      value={isEdit ? employee?.id : 'EMP-AUTO'}
+                      value={isEdit ? (employee?.id || '') : 'EMP-AUTO'}
                       disabled
                       className="bg-gray-50 dark:bg-gray-800"
                     />

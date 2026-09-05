@@ -28,6 +28,13 @@ router.post(
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
+    if (user.status === 'pending') {
+      return res.status(403).json({ error: 'Your account is awaiting HR/Admin approval.' });
+    }
+    if (user.status === 'disabled') {
+      return res.status(403).json({ error: 'Your account has been disabled. Contact an administrator.' });
+    }
+
     const token = jwt.sign(
       {
         userId: user.id,
@@ -64,9 +71,10 @@ const registerSchema = z.object({
 });
 
 // POST /api/auth/register
-// Self-registration always creates an EMPLOYEE account. Role assignment/escalation
-// (ADMIN, HR_*) is an Admin-only action performed after the account exists, not a
-// caller-supplied field on the public registration endpoint.
+// Self-registration always creates an EMPLOYEE account with status 'pending' — it
+// cannot log in until an Admin/HR approves it (and, at that point, can adjust the
+// role — see PATCH /api/users/:id). Role assignment/escalation is never a
+// caller-supplied field on this public endpoint.
 router.post(
   '/register',
   asyncHandler(async (req, res) => {
@@ -82,6 +90,7 @@ router.post(
         email,
         password: hashedPassword,
         role: 'EMPLOYEE',
+        status: 'pending',
         employee: {
           create: {
             name: name || email.split('@')[0],
@@ -93,17 +102,6 @@ router.post(
       include: { employee: { select: { id: true, name: true } } },
     });
 
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        employeeId: user.employee?.id,
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '8h' }
-    );
-
     await writeAuditLog({
       userId: user.id,
       action: 'REGISTER',
@@ -111,12 +109,10 @@ router.post(
       entityId: user.id,
     });
 
+    // No token — a pending account cannot log in yet.
     return res.status(201).json({
-      token,
-      userId: user.id,
-      role: user.role,
-      employeeId: user.employee?.id,
-      name: user.employee?.name || user.email.split('@')[0],
+      pending: true,
+      message: 'Registration submitted. An administrator must approve your account before you can sign in.',
       email: user.email,
     });
   })

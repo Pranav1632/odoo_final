@@ -142,8 +142,11 @@ function LineChart({ data, height = 220 }) {
         )}
 
         {/* Squared datapoints */}
-        {pointsArray.map((p) => (
-          <g key={p.month} className="group cursor-pointer">
+        {pointsArray.map((p, i) => (
+          // Keyed by index, not month label — a trend spanning more than 12
+          // months would repeat short labels (e.g. two different "Aug"s a
+          // year apart) and collide on a label-based key.
+          <g key={i} className="group cursor-pointer">
             <rect
               x={p.x - 1.5}
               y={p.y - 1.5}
@@ -164,8 +167,8 @@ function LineChart({ data, height = 220 }) {
 
       {/* Axis X Month Labels */}
       <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs font-mono font-semibold text-gray-600 px-1">
-        {data.map((item) => (
-          <span key={item.month}>{item.month}</span>
+        {data.map((item, i) => (
+          <span key={i}>{item.month}</span>
         ))}
       </div>
     </div>

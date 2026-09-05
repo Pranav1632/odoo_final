@@ -58,6 +58,11 @@ export const authApi = {
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
 };
 
+export const usersApi = {
+  getAll: () => apiRequest('/users'),
+  update: (id, data) => apiRequest(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+};
+
 export const employeesApi = {
   getAll: (params = '') => apiRequest(`/employees${params ? `?${params}` : ''}`),
   getById: (id) => apiRequest(`/employees/${id}`),
@@ -154,6 +159,7 @@ export const dashboardApi = {
 
 export default {
   auth: authApi,
+  users: usersApi,
   employees: employeesApi,
   contracts: contractsApi,
   schedules: schedulesApi,
