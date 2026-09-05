@@ -314,6 +314,22 @@ describe('Payslip — employee data isolation', () => {
     const res = await request(app).get(`/api/payslips/${empAPayslipId}`).set('Authorization', `Bearer ${payrollUserToken}`);
     expect(res.status).toBe(200);
   });
+
+  test('EMPLOYEE: GET /api/payslips forces filter to own employeeId only', async () => {
+    const { prisma } = require('../../src/lib/prisma');
+    (prisma.payslip.findMany as jest.Mock).mockClear();
+
+    const res = await request(app)
+      .get('/api/payslips?employeeId=other-emp')
+      .set('Authorization', `Bearer ${employeeToken}`);
+
+    expect(res.status).toBe(200);
+    expect(prisma.payslip.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ employeeId: 'emp-A' }),
+      })
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
