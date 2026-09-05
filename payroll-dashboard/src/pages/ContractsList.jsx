@@ -1,13 +1,14 @@
-// src/pages/ContractsList.jsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Card, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb 
 } from '../components/UI';
 import { 
-  contracts, employees, salaryStructures, formatDate, getStatusColor
+  contracts as mockContracts, employees as mockEmployees, salaryStructures, formatDate, getStatusColor
 } from '../data/mockData';
+import { contractsApi, authApi } from '../lib/api';
+
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses' },
@@ -27,17 +28,60 @@ export function ContractsList() {
   const [pageSize, setPageSize] = useState(20);
   const [selectedIds, setSelectedIds] = useState([]);
 
+  const [contractList, setContractList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    authApi.login({ email: 'admin@peoplepay360.com', password: 'Admin@123' })
+      .then(res => {
+        if (res.token) localStorage.setItem('token', res.token);
+        return contractsApi.getAll();
+      })
+      .catch(() => contractsApi.getAll())
+      .then((data) => {
+        if (!isMounted) return;
+        const list = Array.isArray(data) ? data : [];
+        const mapped = list.map((c) => ({
+          id: c.id,
+          contractId: c.id,
+          employeeId: c.employeeId,
+          employeeName: c.employee?.name || 'Employee',
+          wage: c.wage,
+          startDate: c.startDate,
+          endDate: c.endDate,
+          status: c.status || 'Active',
+          salaryStructureId: c.salaryStructureId,
+          position: c.position,
+          department: c.department,
+        }));
+        setContractList(mapped);
+      })
+      .catch((err) => {
+        console.error('Error loading contracts from API', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => { isMounted = false; };
+  }, []);
+
+
   const filteredContracts = useMemo(() => {
-    return contracts.filter(contract => {
-      const emp = employees.find(e => e.id === contract.employeeId);
+    return contractList.filter(contract => {
+      const emp = mockEmployees.find(e => e.id === contract.employeeId);
       const matchesSearch = !search || 
         (emp && (emp.fullName.toLowerCase().includes(search.toLowerCase()) || emp.employeeId.toLowerCase().includes(search.toLowerCase()))) ||
+        (contract.employeeName && contract.employeeName.toLowerCase().includes(search.toLowerCase())) ||
         contract.contractId.toLowerCase().includes(search.toLowerCase());
       const matchesEmp = employeeFilter === 'all' || contract.employeeId === employeeFilter;
       const matchesStatus = statusFilter === 'all' || contract.status?.toLowerCase() === statusFilter.toLowerCase();
       return matchesSearch && matchesEmp && matchesStatus;
     });
-  }, [search, employeeFilter, statusFilter]);
+  }, [contractList, search, employeeFilter, statusFilter]);
+
 
   const totalPages = Math.ceil(filteredContracts.length / pageSize);
   const paginatedContracts = filteredContracts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
