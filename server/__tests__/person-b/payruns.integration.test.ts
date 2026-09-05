@@ -217,6 +217,18 @@ describe('Salary Rule — input validation', () => {
 
     expect(res.status).toBe(400);
   });
+
+  test('PATCH /api/salary-rules/:id changing computationMethod to formula without formula → 400', async () => {
+    const res = await request(app)
+      .patch('/api/salary-rules/rule-1')
+      .set('Authorization', `Bearer ${payrollManagerToken}`)
+      .send({
+        computationMethod: 'formula',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/formula/i);
+  });
 });
 
 // ---------------------------------------------------------------------------

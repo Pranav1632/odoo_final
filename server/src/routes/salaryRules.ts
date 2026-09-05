@@ -42,7 +42,7 @@ const ruleSchema = z
       path: ['percentageOf'],
     }
   )
-  .refine((d) => d.computationMethod !== 'fixed' || d.amount !== null, {
+  .refine((d) => d.computationMethod !== 'fixed' || (d.amount !== null && d.amount !== undefined), {
     message: 'amount is required when computationMethod is "fixed"',
     path: ['amount'],
   });
@@ -136,6 +136,13 @@ router.patch(
 
     const existing = await prisma.salaryRule.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new ApiError(404, 'Salary rule not found');
+
+    // Merge existing rule with incoming patch body and validate the complete rule
+    const merged = {
+      ...existing,
+      ...body,
+    };
+    ruleSchema.parse(merged);
 
     const updated = await prisma.salaryRule.update({
       where: { id: req.params.id },
