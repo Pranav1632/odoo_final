@@ -24,14 +24,17 @@ export function SalaryRuleForm() {
     return isEdit ? allRules.find(r => r.id === id) : null;
   }, [id, isEdit, allRules]);
 
+  const [structureId, setStructureId] = useState(
+    existing?.structureId || salaryStructures[0]?.id || 'struct-001'
+  );
   const [name, setName] = useState(existing?.name || '');
   const [code, setCode] = useState(existing?.code || '');
   const [category, setCategory] = useState(existing?.category || 'Allowance');
-  const [sequence, setSequence] = useState(existing?.seq?.toString() || '1');
-  const [method, setMethod] = useState(existing?.method?.toLowerCase() || 'percentage');
+  const [sequence, setSequence] = useState(existing?.seq?.toString() || existing?.sequence?.toString() || '1');
+  const [method, setMethod] = useState(existing?.method?.toLowerCase() || existing?.computationMethod || 'percentage');
   const [amount, setAmount] = useState(existing?.amount?.toString() || '');
-  const [ofRule, setOfRule] = useState(existing?.ofRule || 'BASIC');
-  const [percentage, setPercentage] = useState(existing?.percentage?.toString() || '40');
+  const [ofRule, setOfRule] = useState(existing?.ofRule || existing?.percentageOf || 'BASIC');
+  const [percentage, setPercentage] = useState(existing?.percentage?.toString() || existing?.percentageValue?.toString() || '40');
   const [formula, setFormula] = useState(existing?.formula || 'BASIC + HRA');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -106,6 +109,14 @@ export function SalaryRuleForm() {
         </CardHeader>
         <CardBody className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Salary Structure *"
+              value={structureId}
+              onChange={(e) => setStructureId(e.target.value)}
+              options={salaryStructures.map(s => ({ value: s.id, label: `${s.name} (${s.code})` }))}
+              disabled={!canEdit}
+              required
+            />
             <Input
               label="Rule Name *"
               value={name}
@@ -115,6 +126,9 @@ export function SalaryRuleForm() {
               disabled={!canEdit}
               required
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Rule Code * (Uppercase & Underscores only)"
               value={code}
@@ -124,9 +138,6 @@ export function SalaryRuleForm() {
               disabled={!canEdit}
               required
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Category *"
               value={category}
@@ -140,6 +151,9 @@ export function SalaryRuleForm() {
               ]}
               disabled={!canEdit}
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Computation Sequence *"
               type="number"
