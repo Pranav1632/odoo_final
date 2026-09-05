@@ -4,7 +4,7 @@
 // When Person A and B Express backend is running (e.g., http://localhost:5000/api),
 // this client automatically routes requests, attaches JWT tokens, and handles responses/errors cleanly.
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 /**
  * Generic request wrapper supporting Token authentication, JSON bodies, and file downloads.
@@ -34,6 +34,13 @@ async function apiRequest(endpoint, options = {}) {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if (response.status === 401 && !endpoint.includes('/auth/')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('pp360_session');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
       throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
     }
     return data;
@@ -139,6 +146,7 @@ export const payslipsApi = {
 };
 
 export const dashboardApi = {
+  get: (params = '') => apiRequest(`/dashboard${params ? `?${params}` : ''}`),
   getMetrics: (params = '') => apiRequest(`/dashboard${params ? `?${params}` : ''}`),
 };
 

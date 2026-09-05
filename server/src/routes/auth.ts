@@ -21,7 +21,7 @@ router.post(
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { employee: { select: { id: true } } },
+      include: { employee: { select: { id: true, name: true } } },
     });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -46,7 +46,75 @@ router.post(
       entityId: user.id,
     });
 
-    return res.json({ token, role: user.role, employeeId: user.employee?.id });
+    return res.json({
+      token,
+      role: user.role,
+      employeeId: user.employee?.id,
+      name: user.employee?.name || user.email.split('@')[0],
+      email: user.email,
+    });
+  })
+);
+
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  name: z.string().min(1).optional(),
+  role: z.enum(['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER', 'HR_MANAGER', 'EMPLOYEE']).optional(),
+});
+
+// POST /api/auth/register
+router.post(
+  '/register',
+  asyncHandler(async (req, res) => {
+    const { email, password, name, role = 'EMPLOYEE' } = registerSchema.parse(req.body);
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return res.status(409).json({ error: 'Email already registered' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        role: role as any,
+        employee: {
+          create: {
+            name: name || email.split('@')[0],
+            department: 'Operations',
+            jobPosition: 'Staff',
+          },
+        },
+      },
+      include: { employee: { select: { id: true, name: true } } },
+    });
+
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        employeeId: user.employee?.id,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '8h' }
+    );
+
+    await writeAuditLog({
+      userId: user.id,
+      action: 'REGISTER',
+      entityType: 'User',
+      entityId: user.id,
+    });
+
+    return res.status(201).json({
+      token,
+      role: user.role,
+      employeeId: user.employee?.id,
+      name: user.employee?.name || user.email.split('@')[0],
+      email: user.email,
+    });
   })
 );
 

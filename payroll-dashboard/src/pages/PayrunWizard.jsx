@@ -4,10 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Card, CardBody, PageHeader, Button, Select, Input, Badge, Avatar, Breadcrumb, Modal 
 } from '../components/UI';
-import { 
-  employees, departments, salaryStructures, contracts,
-  formatDate
-} from '../data/mockData';
+import { salaryStructuresApi, payrunsApi, employeesApi } from '../lib/api';
 
 const wizardSteps = [
   { id: 1, label: 'Define Scope' },
@@ -19,29 +16,56 @@ export function PayrunWizard() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
-    salaryStructureId: 'struct-001',
+    salaryStructureId: '',
     periodStart: '2026-08-01',
     periodEnd: '2026-08-31',
   });
-  const [selectedEmployees, setSelectedEmployees] = useState(['emp-001', 'emp-002', 'emp-003']);
+  const [structures, setStructures] = useState([]);
+  const [dbEmployees, setDbEmployees] = useState([]);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [discardModal, setDiscardModal] = useState(false);
 
-  const selectedStructure = salaryStructures.find(s => s.id === formData.salaryStructureId);
+  useEffect(() => {
+    salaryStructuresApi.getAll()
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStructures(data);
+          setFormData(prev => ({
+            ...prev,
+            salaryStructureId: prev.salaryStructureId || data[0].id,
+          }));
+        }
+      })
+      .catch(() => {});
+
+    employeesApi.getAll()
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDbEmployees(data);
+          setSelectedEmployees(data.slice(0, 10).map(e => e.id));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const selectedStructure = structures.find(s => s.id === formData.salaryStructureId);
   const structureRules = selectedStructure?.rules?.length || 0;
 
   const eligibleEmployees = useMemo(() => {
     if (!formData.salaryStructureId) return [];
-    return employees.map(emp => {
-      const contract = contracts.find(c => c.employeeId === emp.id && c.status === 'Active');
+    return dbEmployees.map(emp => {
+      const hasActive = emp.contracts?.some(c => c.status === 'active') ?? true;
       return {
         ...emp,
-        hasValidContract: !!contract,
-        contractWarning: !contract ? 'No active contract' : null,
+        fullName: emp.name || emp.fullName,
+        departmentId: emp.department || 'General',
+        hasValidContract: hasActive,
+        contractWarning: !hasActive ? 'No active contract' : null,
       };
     });
-  }, [formData.salaryStructureId]);
+  }, [formData.salaryStructureId, dbEmployees]);
 
   const eligibleCount = eligibleEmployees.filter(e => e.hasValidContract).length;
   const selectedCount = selectedEmployees.length;
@@ -61,28 +85,41 @@ export function PayrunWizard() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) {
       if (validateStep1()) setStep(2);
-    } else if (step === 2) {
-      handleCreate();
+      return;
     }
-  };
-
-  const handleBack = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  const handleCreate = async () => {
+    // Step 2 submit
     if (selectedEmployees.length === 0) {
       setErrors({ employees: 'Please select at least one employee' });
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const newPayrun = await payrunsApi.create({
+        name: formData.name,
+        periodStart: new Date(formData.periodStart).toISOString(),
+        periodEnd: new Date(formData.periodEnd).toISOString(),
+        salaryStructureId: formData.salaryStructureId,
+      });
+
+      if (newPayrun && newPayrun.id) {
+        await payrunsApi.attachEmployees(newPayrun.id, selectedEmployees).catch(e => console.warn(e));
+        navigate(`/payroll/payruns/${newPayrun.id}`, { replace: true });
+      } else {
+        navigate('/payroll/payruns', { replace: true });
+      }
+    } catch (err) {
+      console.error('Payrun create failed:', err);
+      setErrors({ form: err.message || 'Failed to create payrun' });
+    } finally {
       setLoading(false);
-      navigate('/payroll/payruns/pr-001', { replace: true });
-    }, 800);
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 1) setStep(step - 1);
   };
 
   const handleEmployeeToggle = (empId) => {
@@ -149,7 +186,7 @@ export function PayrunWizard() {
                 label="Salary Structure *"
                 value={formData.salaryStructureId}
                 onChange={(e) => handleChange('salaryStructureId', e.target.value)}
-                options={salaryStructures.map(s => ({ value: s.id, label: s.name }))}
+                options={structures.map(s => ({ value: s.id, label: s.name }))}
                 error={errors.salaryStructureId}
                 required
               />
@@ -195,23 +232,28 @@ export function PayrunWizard() {
                 </Button>
               </div>
 
-              <div className="border border-gray-200 rounded-2xl divide-y divide-gray-100 max-h-80 overflow-y-auto bg-white">
+              {errors.employees && (
+                <p className="text-xs text-red-600">{errors.employees}</p>
+              )}
+
+              <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
                 {eligibleEmployees.map(emp => (
                   <label 
                     key={emp.id} 
-                    className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-cream/40 transition-colors ${!emp.hasValidContract ? 'opacity-50' : ''}`}
+                    className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                      selectedEmployees.includes(emp.id) ? 'bg-cream border-accent-500/40 shadow-soft' : 'border-gray-100 hover:bg-gray-50'
+                    }`}
                   >
                     <input
                       type="checkbox"
                       checked={selectedEmployees.includes(emp.id)}
                       onChange={() => handleEmployeeToggle(emp.id)}
-                      disabled={!emp.hasValidContract}
-                      className="w-4 h-4 rounded text-accent-500 focus:ring-accent-500"
+                      className="w-4 h-4 text-accent-600 rounded border-gray-300 focus:ring-accent-500"
                     />
                     <Avatar name={emp.fullName} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 text-sm truncate">{emp.fullName}</p>
-                      <p className="text-xs text-gray-500">{departments.find(d => d.id === emp.departmentId)?.name}</p>
+                      <p className="text-xs text-gray-500">{emp.departmentId}</p>
                     </div>
                     <Badge variant={emp.hasValidContract ? 'success' : 'warning'} size="sm">
                       {emp.hasValidContract ? 'Eligible' : emp.contractWarning}

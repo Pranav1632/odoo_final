@@ -119,7 +119,8 @@ router.get(
   requireAuth,
   requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
-    const rule = await prisma.salaryRule.findUnique({ where: { id: req.params.id } });
+    const id = req.params.id as string;
+    const rule = await prisma.salaryRule.findUnique({ where: { id } });
     if (!rule) throw new ApiError(404, 'Salary rule not found');
     res.json(rule);
   })
@@ -132,9 +133,10 @@ router.patch(
   requireRole(['HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
     const body = updateSchema.parse(req.body);
 
-    const existing = await prisma.salaryRule.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.salaryRule.findUnique({ where: { id } });
     if (!existing) throw new ApiError(404, 'Salary rule not found');
 
     // Merge existing rule with incoming patch body and validate the complete rule
@@ -145,7 +147,7 @@ router.patch(
     ruleSchema.parse(merged);
 
     const updated = await prisma.salaryRule.update({
-      where: { id: req.params.id },
+      where: { id },
       data: body,
     });
 
@@ -167,17 +169,18 @@ router.delete(
   requireRole(['HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
 
-    const existing = await prisma.salaryRule.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.salaryRule.findUnique({ where: { id } });
     if (!existing) throw new ApiError(404, 'Salary rule not found');
 
-    await prisma.salaryRule.delete({ where: { id: req.params.id } });
+    await prisma.salaryRule.delete({ where: { id } });
 
     await writeAuditLog({
       userId: session.userId,
       action: 'DELETE_SALARY_RULE',
       entityType: 'SalaryRule',
-      entityId: req.params.id,
+      entityId: id,
     });
 
     res.status(204).send();

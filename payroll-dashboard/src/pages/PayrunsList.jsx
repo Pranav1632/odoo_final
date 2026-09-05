@@ -1,13 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Card, CardHeader, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb 
 } from '../components/UI';
 import { 
-  payruns, salaryStructures,
   formatDate, formatCurrency, getStatusColor
-} from '../data/mockData';
+} from '../lib/formatters';
+import { payrunsApi, salaryStructuresApi } from '../lib/api';
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses' },
@@ -15,18 +15,6 @@ const statusOptions = [
   { value: 'Computed', label: 'Computed' },
   { value: 'Validated', label: 'Validated' },
   { value: 'Paid', label: 'Paid' },
-];
-
-const periodOptions = [
-  { value: 'all', label: 'All Periods' },
-  { value: '2025-08', label: 'August 2025' },
-  { value: '2025-07', label: 'July 2025' },
-  { value: '2025-06', label: 'June 2025' },
-];
-
-const structureOptions = [
-  { value: 'all', label: 'All Structures' },
-  ...salaryStructures.map(s => ({ value: s.id, label: s.name })),
 ];
 
 export function PayrunsList() {
@@ -40,19 +28,72 @@ export function PayrunsList() {
   const [pageSize, setPageSize] = useState(20);
   const [selectedIds, setSelectedIds] = useState([]);
   
+  const [payrunList, setPayrunList] = useState([]);
+  const [structureList, setStructureList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      payrunsApi.getAll().catch(() => []),
+      salaryStructuresApi.getAll().catch(() => []),
+    ]).then(([prData, structData]) => {
+      if (!isMounted) return;
+      if (Array.isArray(prData)) {
+        setPayrunList(prData.map(p => ({
+          id: p.id,
+          name: p.name,
+          periodStart: p.periodStart?.split('T')[0] || p.periodStart,
+          periodEnd: p.periodEnd?.split('T')[0] || p.periodEnd,
+          status: p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1).toLowerCase() : 'Draft',
+          salaryStructureId: p.salaryStructureId,
+          payslipsCount: p._count?.payslips ?? p.payslips?.length ?? 0,
+          totalNet: p.totalNet || 0,
+        })));
+      } else {
+        setPayrunList([]);
+      }
+      if (Array.isArray(structData)) {
+        setStructureList(structData);
+      } else {
+        setStructureList([]);
+      }
+    }).finally(() => {
+      if (isMounted) setLoading(false);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  const structureOptions = [
+    { value: 'all', label: 'All Structures' },
+    ...structureList.map(s => ({ value: s.id, label: s.name })),
+  ];
+
+  const periodOptions = useMemo(() => {
+    const periods = Array.from(new Set(payrunList.map(p => p.periodStart ? p.periodStart.slice(0, 7) : null).filter(Boolean)));
+    return [
+      { value: 'all', label: 'All Periods' },
+      ...periods.map(period => ({
+        value: period,
+        label: period,
+      })),
+    ];
+  }, [payrunList]);
+
   const filteredPayruns = useMemo(() => {
-    return payruns.filter(pr => {
+    return payrunList.filter(pr => {
       const matchesSearch = !search || 
         pr.name.toLowerCase().includes(search.toLowerCase()) ||
-        pr.periodStart.includes(search) ||
-        pr.periodEnd.includes(search);
-      const matchesStatus = statusFilter === 'all' || pr.status === statusFilter;
+        (pr.periodStart && pr.periodStart.includes(search)) ||
+        (pr.periodEnd && pr.periodEnd.includes(search));
+      const matchesStatus = statusFilter === 'all' || pr.status.toLowerCase() === statusFilter.toLowerCase();
       const matchesPeriod = periodFilter === 'all' || 
-        (pr.periodStart.startsWith(periodFilter) || pr.periodEnd.startsWith(periodFilter));
+        (pr.periodStart && pr.periodStart.startsWith(periodFilter)) || 
+        (pr.periodEnd && pr.periodEnd.startsWith(periodFilter));
       const matchesStruct = structureFilter === 'all' || pr.salaryStructureId === structureFilter;
       return matchesSearch && matchesStatus && matchesPeriod && matchesStruct;
     });
-  }, [search, statusFilter, periodFilter, structureFilter]);
+  }, [payrunList, search, statusFilter, periodFilter, structureFilter]);
   
   const totalPages = Math.ceil(filteredPayruns.length / pageSize);
   const paginatedPayruns = filteredPayruns.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -79,7 +120,7 @@ export function PayrunsList() {
     search && { key: 'search', label: `Search: "${search}"`, onRemove: () => { setSearch(''); handleFilterChange('search', ''); } },
     statusFilter !== 'all' && { key: 'status', label: `Status: ${statusFilter}`, onRemove: () => handleFilterChange('status', 'all') },
     periodFilter !== 'all' && { key: 'period', label: `Period: ${periodFilter}`, onRemove: () => handleFilterChange('period', 'all') },
-    structureFilter !== 'all' && { key: 'structure', label: `Structure: ${salaryStructures.find(s => s.id === structureFilter)?.name}`, onRemove: () => handleFilterChange('structure', 'all') },
+    structureFilter !== 'all' && { key: 'structure', label: `Structure: ${structureList.find(s => s.id === structureFilter)?.name || structureFilter}`, onRemove: () => handleFilterChange('structure', 'all') },
   ].filter(Boolean);
   
   const columns = [
@@ -91,10 +132,10 @@ export function PayrunsList() {
     )},
     { key: 'period', header: 'Period', width: '160px', render: (row) => `${formatDate(row.periodStart)} – ${formatDate(row.periodEnd)}` },
     { key: 'salaryStructure', header: 'Salary Structure', width: '160px', render: (row) => {
-      const struct = salaryStructures.find(s => s.id === row.salaryStructureId);
+      const struct = structureList.find(s => s.id === row.salaryStructureId);
       return struct ? struct.name : '—';
     }},
-    { key: 'employees', header: 'Employees', width: '100px', render: (row) => `${row.employees.length}` },
+    { key: 'employees', header: 'Employees', width: '100px', render: (row) => `${row.payslipsCount ?? row.employees?.length ?? 0}` },
     { key: 'totalNet', header: 'Total Net', width: '120px', render: (row) => formatCurrency(row.totalNet) },
     { key: 'status', header: 'Status', width: '110px', render: (row) => {
       const isPaid = row.status === 'Paid';
@@ -161,7 +202,7 @@ export function PayrunsList() {
             onRowClick={(row) => navigate(`/payroll/payruns/${row.id}`)}
             selectedKeys={selectedIds}
             onSelectionChange={handleSelectionChange}
-            loading={false}
+            loading={loading}
             emptyMessage="No payruns found matching your criteria"
           />
         </CardBody>

@@ -93,8 +93,9 @@ router.get(
   requireAuth,
   requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
+    const id = req.params.id as string;
     const payrun = await prisma.payrun.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         salaryStructure: { select: { id: true, name: true } },
         payslips: {
@@ -121,7 +122,8 @@ router.get(
   requireAuth,
   requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
-    const payrun = await prisma.payrun.findUnique({ where: { id: req.params.id } });
+    const id = req.params.id as string;
+    const payrun = await prisma.payrun.findUnique({ where: { id } });
     if (!payrun) throw new ApiError(404, 'Payrun not found');
 
     const allEmployees = await prisma.employee.findMany({
@@ -158,9 +160,10 @@ router.post(
   requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
     const { employeeIds } = attachEmployeesSchema.parse(req.body);
 
-    const payrun = await prisma.payrun.findUnique({ where: { id: req.params.id } });
+    const payrun = await prisma.payrun.findUnique({ where: { id } });
     if (!payrun) throw new ApiError(404, 'Payrun not found');
     if (payrun.status !== 'draft') {
       throw new ApiError(400, 'Can only attach employees to a draft payrun');
@@ -168,12 +171,12 @@ router.post(
 
     // Existing payslip employee IDs — skip duplicates
     const existing = await prisma.payslip.findMany({
-      where: { payrunId: req.params.id },
+      where: { payrunId: id },
       select: { employeeId: true },
     });
     const existingIds = new Set(existing.map((p) => p.employeeId));
 
-    const toCreate = employeeIds.filter((id) => !existingIds.has(id));
+    const toCreate = employeeIds.filter((empId) => !existingIds.has(empId));
 
     // Resolve contracts and create payslip stubs in a transaction
     const created: string[] = [];
@@ -193,7 +196,7 @@ router.post(
 
         await tx.payslip.create({
           data: {
-            payrunId: req.params.id,
+            payrunId: id,
             employeeId,
             contractId: contract.id,
             workedDays: 0,
@@ -209,7 +212,7 @@ router.post(
       userId: session.userId,
       action: 'ATTACH_EMPLOYEES',
       entityType: 'Payrun',
-      entityId: req.params.id,
+      entityId: id,
       details: { added: created.length, skipped: toCreate.length - created.length },
     });
 
@@ -231,9 +234,10 @@ router.post(
   requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
 
     const payrun = await prisma.payrun.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         salaryStructure: { include: { rules: { orderBy: { sequence: 'asc' } } } },
         payslips: { include: { employee: true } },
@@ -247,7 +251,7 @@ router.post(
 
     // Process each payslip in parallel
     const updates = await Promise.all(
-      payrun.payslips.map(async (payslip) => {
+      (payrun as any).payslips.map(async (payslip: any) => {
         const warnings: string[] = [];
 
         // 1. Resolve the period-correct contract
@@ -284,7 +288,7 @@ router.post(
           scope,
           warnings: ruleWarnings,
         } = computeSalaryRules(
-          contract.salaryStructure.rules.map((r) => ({
+          contract.salaryStructure.rules.map((r: any) => ({
             ...r,
             computationMethod: r.computationMethod as 'fixed' | 'percentage' | 'formula',
           })),
@@ -325,7 +329,7 @@ router.post(
     );
 
     await prisma.payrun.update({
-      where: { id: req.params.id },
+      where: { id },
       data: { status: 'computed' },
     });
 
@@ -333,12 +337,12 @@ router.post(
       userId: session.userId,
       action: 'COMPUTE_PAYRUN',
       entityType: 'Payrun',
-      entityId: req.params.id,
+      entityId: id,
     });
 
     res.json({
-      computed: updates.filter((u) => !u.skipped).length,
-      skipped: updates.filter((u) => u.skipped).length,
+      computed: updates.filter((u: any) => !u.skipped).length,
+      skipped: updates.filter((u: any) => u.skipped).length,
     });
   })
 );
@@ -353,9 +357,10 @@ router.post(
   requireRole(['HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
 
     const payrun = await prisma.payrun.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: { payslips: true },
     });
     if (!payrun) throw new ApiError(404, 'Payrun not found');
@@ -366,7 +371,7 @@ router.post(
 
     // Block if any payslip has a blocking warning
     const blockingWarnings: string[] = [];
-    for (const payslip of payrun.payslips) {
+    for (const payslip of (payrun as any).payslips) {
       for (const w of payslip.warnings) {
         if (w.includes('skipped') || w.includes('missing bank details')) {
           blockingWarnings.push(`Employee ${payslip.employeeId}: ${w}`);
@@ -384,11 +389,11 @@ router.post(
     // Set all payslips and the payrun to 'validated'
     await prisma.$transaction([
       prisma.payslip.updateMany({
-        where: { payrunId: req.params.id },
+        where: { payrunId: id },
         data: { status: 'validated' },
       }),
       prisma.payrun.update({
-        where: { id: req.params.id },
+        where: { id },
         data: { status: 'validated' },
       }),
     ]);
@@ -397,7 +402,7 @@ router.post(
       userId: session.userId,
       action: 'VALIDATE_PAYRUN',
       entityType: 'Payrun',
-      entityId: req.params.id,
+      entityId: id,
     });
 
     res.json({ message: 'Payrun validated' });
@@ -414,8 +419,9 @@ router.post(
   requireRole(['HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
 
-    const payrun = await prisma.payrun.findUnique({ where: { id: req.params.id } });
+    const payrun = await prisma.payrun.findUnique({ where: { id } });
     if (!payrun) throw new ApiError(404, 'Payrun not found');
 
     if (payrun.status !== 'validated') {
@@ -424,11 +430,11 @@ router.post(
 
     await prisma.$transaction([
       prisma.payslip.updateMany({
-        where: { payrunId: req.params.id },
+        where: { payrunId: id },
         data: { status: 'paid' },
       }),
       prisma.payrun.update({
-        where: { id: req.params.id },
+        where: { id },
         data: { status: 'paid' },
       }),
     ]);
@@ -437,7 +443,7 @@ router.post(
       userId: session.userId,
       action: 'MARK_PAID',
       entityType: 'Payrun',
-      entityId: req.params.id,
+      entityId: id,
     });
 
     res.json({ message: 'Payrun marked as paid' });
@@ -455,13 +461,14 @@ router.post(
   requireRole(['HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
 
-    const payrun = await prisma.payrun.findUnique({ where: { id: req.params.id } });
+    const payrun = await prisma.payrun.findUnique({ where: { id } });
     if (!payrun) throw new ApiError(404, 'Payrun not found');
 
     try {
       await payslipSendQueue.add('send', {
-        payrunId: req.params.id,
+        payrunId: id,
         requestedByUserId: session.userId,
       });
     } catch (err) {

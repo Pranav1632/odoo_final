@@ -85,65 +85,75 @@ export function logout() {
 }
 
 /**
- * Authenticate against either real Person A backend or seeded mock accounts.
+ * Authenticate against real backend (POST /api/auth/login).
  */
 export async function authenticateUser({ email, password }) {
-  // 1. Try real backend first if configured / available
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    if (res.ok) {
-      const data = await res.json();
-      const session = {
-        userId: data.employeeId || 'emp-user',
-        email,
-        role: data.role || 'HR_PAYROLL_MANAGER',
-        name: email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase()),
-        employeeId: data.employeeId || 'emp-001',
-        token: data.token
-      };
-      setSession(session);
-      return session;
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.error || data.message || 'Invalid email or password');
     }
-  } catch {
-    // Backend offline / in development — proceed to seed accounts validation
+
+    const session = {
+      userId: data.employeeId || data.userId || 'emp-user',
+      email: data.email || email,
+      role: data.role || 'EMPLOYEE',
+      name: data.name || email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      employeeId: data.employeeId || null,
+      token: data.token
+    };
+
+    setSession(session);
+    return session;
+  } catch (err) {
+    if (err.message && !err.message.includes('fetch')) {
+      throw err;
+    }
+    throw new Error('Could not connect to backend server at ' + API_BASE_URL + '. Ensure the API server is running.');
   }
-
-  // 2. Validate against official seed accounts spec
-  const match = SEED_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (!match || match.password !== password) {
-    throw new Error('Invalid email or password. Please check your credentials.');
-  }
-
-  const session = {
-    userId: match.employeeId,
-    email: match.email,
-    role: match.role,
-    name: match.name,
-    employeeId: match.employeeId,
-    token: `demo-jwt-token-${match.role.toLowerCase()}`
-  };
-
-  setSession(session);
-  return session;
 }
 
 /**
- * Register account provider
+ * Register account with real backend (POST /api/auth/register).
  */
 export async function registerUser({ name, email, password, role = 'EMPLOYEE' }) {
-  const session = {
-    userId: `emp-${Date.now().toString().slice(-3)}`,
-    email,
-    role,
-    name,
-    employeeId: `emp-${Date.now().toString().slice(-3)}`,
-    token: `demo-jwt-registered-${role.toLowerCase()}`
-  };
-  setSession(session);
-  return session;
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, role })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.error || data.message || 'Failed to create account');
+    }
+
+    const session = {
+      userId: data.employeeId || data.userId || 'emp-user',
+      email: data.email || email,
+      role: data.role || role,
+      name: data.name || name,
+      employeeId: data.employeeId || null,
+      token: data.token
+    };
+
+    setSession(session);
+    return session;
+  } catch (err) {
+    if (err.message && !err.message.includes('fetch')) {
+      throw err;
+    }
+    throw new Error('Could not connect to backend server at ' + API_BASE_URL + '. Ensure the API server is running.');
+  }
 }

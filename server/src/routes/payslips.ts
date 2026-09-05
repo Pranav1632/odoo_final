@@ -166,8 +166,9 @@ router.get(
       return res.status(403).json({ error: 'Forbidden' });
     }
 
+    const id = req.params.id as string;
     const payslip = await prisma.payslip.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         employee: { select: { id: true, name: true, department: true } },
         payrun: { select: { id: true, name: true, periodStart: true, periodEnd: true } },
@@ -200,8 +201,9 @@ router.get(
       return res.status(403).json({ error: 'Forbidden' });
     }
 
+    const id = req.params.id as string;
     const payslip = await prisma.payslip.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         employee: { select: { id: true, name: true, department: true } },
         payrun: { select: { id: true, name: true, periodStart: true, periodEnd: true } },
@@ -216,16 +218,17 @@ router.get(
       throw new ApiError(403, 'Forbidden');
     }
 
+    const p = payslip as any;
     const pdfBuffer = await generatePayslipPdf({
-      employee: payslip.employee,
+      employee: p.employee,
       payrun: {
-        name: payslip.payrun.name,
-        periodStart: payslip.payrun.periodStart.toISOString(),
-        periodEnd: payslip.payrun.periodEnd.toISOString(),
+        name: p.payrun.name,
+        periodStart: p.payrun.periodStart.toISOString(),
+        periodEnd: p.payrun.periodEnd.toISOString(),
       },
-      workedDays: payslip.workedDays,
-      lines: payslip.lines,
-      netSalary: payslip.netSalary,
+      workedDays: p.workedDays,
+      lines: p.lines,
+      netSalary: p.netSalary,
     });
 
     res.setHeader('Content-Type', 'application/pdf');

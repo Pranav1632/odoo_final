@@ -2,8 +2,9 @@
   "name": "peoplepay360",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix web\"",
-    "dev:server": "npm run dev --prefix server"
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix payroll-dashboard\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:frontend": "npm run dev --prefix payroll-dashboard"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"
