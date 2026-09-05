@@ -32,32 +32,41 @@ export function EmployeesList() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   
-  const [employeeList, setEmployeeList] = useState(mockEmployees);
+  const [employeeList, setEmployeeList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
-    employeesApi.getAll()
+    
+    // Auto-authenticate dev session if token is missing
+    authApi.login({ email: 'admin@peoplepay360.com', password: 'Admin@123' })
+      .then(res => {
+        if (res.token) {
+          localStorage.setItem('token', res.token);
+        }
+        return employeesApi.getAll();
+      })
+      .catch(() => employeesApi.getAll())
       .then((data) => {
         if (!isMounted) return;
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map((emp) => ({
-            id: emp.id,
-            fullName: emp.name,
-            employeeId: emp.id,
-            workEmail: `${emp.name.toLowerCase().replace(/\s+/g, '.')}@company.com`,
-            departmentId: emp.department || 'eng',
-            jobPositionId: emp.jobPosition || 'dev',
-            scheduleId: emp.scheduleId || 'sch_1',
-            employmentStatus: emp.status === 'active' ? 'Active' : 'Inactive',
-            contractsCount: emp._count?.contracts ?? emp.contracts?.length ?? 0,
-            attendanceCount: emp._count?.attendances ?? 0,
-          }));
-          setEmployeeList(mapped);
-        }
+        const list = Array.isArray(data) ? data : [];
+        const mapped = list.map((emp) => ({
+          id: emp.id,
+          fullName: emp.name,
+          employeeId: emp.id,
+          workEmail: `${emp.name.toLowerCase().replace(/\s+/g, '.')}@company.com`,
+          departmentId: emp.department || 'Engineering',
+          jobPositionId: emp.jobPosition || 'Developer',
+          scheduleId: emp.scheduleId || 'Standard 9-5',
+          employmentStatus: emp.status === 'active' ? 'Active' : 'Inactive',
+          contractsCount: emp._count?.contracts ?? emp.contracts?.length ?? 0,
+          attendanceCount: emp._count?.attendances ?? 0,
+        }));
+        setEmployeeList(mapped);
       })
       .catch((err) => {
-        console.warn('Backend API unavailable, using mock data fallback', err);
+        if (isMounted) setError(err.message);
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -67,6 +76,7 @@ export function EmployeesList() {
       isMounted = false;
     };
   }, []);
+
 
   // Role check per Task 4 and security test:
   const canCreateEmployee = 

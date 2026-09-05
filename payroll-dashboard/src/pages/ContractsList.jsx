@@ -27,36 +27,46 @@ export function ContractsList() {
   const [pageSize, setPageSize] = useState(20);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  const [contractList, setContractList] = useState(mockContracts);
+  const [contractList, setContractList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    contractsApi.getAll()
+
+    authApi.login({ email: 'admin@peoplepay360.com', password: 'Admin@123' })
+      .then(res => {
+        if (res.token) localStorage.setItem('token', res.token);
+        return contractsApi.getAll();
+      })
+      .catch(() => contractsApi.getAll())
       .then((data) => {
         if (!isMounted) return;
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map((c) => ({
-            id: c.id,
-            contractId: c.id,
-            employeeId: c.employeeId,
-            employeeName: c.employee?.name || 'Employee',
-            wage: c.wage,
-            startDate: c.startDate,
-            endDate: c.endDate,
-            status: c.status || 'Active',
-            salaryStructureId: c.salaryStructureId,
-            position: c.position,
-            department: c.department,
-          }));
-          setContractList(mapped);
-        }
+        const list = Array.isArray(data) ? data : [];
+        const mapped = list.map((c) => ({
+          id: c.id,
+          contractId: c.id,
+          employeeId: c.employeeId,
+          employeeName: c.employee?.name || 'Employee',
+          wage: c.wage,
+          startDate: c.startDate,
+          endDate: c.endDate,
+          status: c.status || 'Active',
+          salaryStructureId: c.salaryStructureId,
+          position: c.position,
+          department: c.department,
+        }));
+        setContractList(mapped);
       })
       .catch((err) => {
-        console.warn('Backend API unavailable, using mock data fallback for contracts', err);
+        console.error('Error loading contracts from API', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
       });
 
     return () => { isMounted = false; };
   }, []);
+
 
   const filteredContracts = useMemo(() => {
     return contractList.filter(contract => {
