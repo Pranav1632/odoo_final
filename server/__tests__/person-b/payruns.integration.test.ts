@@ -31,6 +31,16 @@ const payrollManagerToken = makeToken('HR_PAYROLL_MANAGER');
 const payrollUserToken = makeToken('HR_PAYROLL_USER');
 
 // ---------------------------------------------------------------------------
+// Mock Queue & Redis
+// ---------------------------------------------------------------------------
+jest.mock('../../src/lib/payroll/queue', () => ({
+  redisConnection: { quit: jest.fn(), disconnect: jest.fn() },
+  payslipSendQueue: {
+    add: jest.fn().mockResolvedValue({ id: 'job-1' }),
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // Mock Prisma — avoids needing a live DB for integration tests
 // ---------------------------------------------------------------------------
 jest.mock('../../src/lib/prisma', () => {
@@ -85,6 +95,10 @@ jest.mock('../../src/lib/prisma', () => {
     payslips: [mockPayslip],
   };
 
+  const mockPayslipUpdate = jest.fn().mockImplementation((args: any) =>
+    Promise.resolve({ ...mockPayslip, ...args?.data })
+  );
+
   return {
     prisma: {
       payrun: {
@@ -96,7 +110,7 @@ jest.mock('../../src/lib/prisma', () => {
       payslip: {
         findUnique: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
-        update: jest.fn().mockResolvedValue(mockPayslip),
+        update: mockPayslipUpdate,
         updateMany: jest.fn(),
         create: jest.fn(),
       },
@@ -125,7 +139,7 @@ jest.mock('../../src/lib/prisma', () => {
         if (typeof fnOrArray === 'function') {
           return fnOrArray({
             payslipLine: { deleteMany: jest.fn(), createMany: jest.fn() },
-            payslip: { update: jest.fn() },
+            payslip: { update: mockPayslipUpdate },
             payrun: { update: jest.fn() },
           });
         }
@@ -326,8 +340,12 @@ describe('Live rule edit — recompute produces different netSalary', () => {
 
     // Capture netSalary written to DB on first compute
     const { prisma } = require('../../src/lib/prisma');
-    const firstComputeUpdate = (prisma.$transaction as jest.Mock).mock.calls[0];
-    expect(firstComputeUpdate).toBeDefined();
+    const updateCalls1 = (prisma.payslip.update as jest.Mock).mock.calls.filter(
+      (c: any) => c[0]?.data?.netSalary !== undefined
+    );
+    expect(updateCalls1.length).toBeGreaterThanOrEqual(1);
+    const firstNetSalary = updateCalls1[updateCalls1.length - 1][0].data.netSalary;
+    expect(firstNetSalary).toBe(30000);
 
     // Second compute: BASIC=35000, NET=35000 (rule was edited)
     (getActiveContractForPeriod as jest.Mock).mockResolvedValueOnce({
@@ -346,6 +364,15 @@ describe('Live rule edit — recompute produces different netSalary', () => {
       .set('Authorization', `Bearer ${payrollUserToken}`);
     expect(res2.status).toBe(200);
     expect(res2.body.computed).toBe(1);
+
+    // Capture netSalary written to DB on second compute and verify it changed
+    const updateCalls2 = (prisma.payslip.update as jest.Mock).mock.calls.filter(
+      (c: any) => c[0]?.data?.netSalary !== undefined
+    );
+    expect(updateCalls2.length).toBeGreaterThan(updateCalls1.length);
+    const secondNetSalary = updateCalls2[updateCalls2.length - 1][0].data.netSalary;
+    expect(secondNetSalary).toBe(35000);
+    expect(secondNetSalary).toBeGreaterThan(firstNetSalary);
 
     // The delete-and-recreate lines pattern was exercised (transaction called twice)
     expect((prisma.$transaction as jest.Mock).mock.calls.length).toBeGreaterThanOrEqual(2);
