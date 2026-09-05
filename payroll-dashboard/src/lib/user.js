@@ -103,7 +103,7 @@ export async function authenticateUser({ email, password }) {
     }
 
     const session = {
-      userId: data.employeeId || data.userId || 'emp-user',
+      userId: data.userId || data.employeeId || 'emp-user',
       email: data.email || email,
       role: data.role || 'EMPLOYEE',
       name: data.name || email.split('@')[0].replace('.', ' ').replace(/\b\w/g, c => c.toUpperCase()),
@@ -140,7 +140,7 @@ export async function registerUser({ name, email, password, role = 'EMPLOYEE' })
     }
 
     const session = {
-      userId: data.employeeId || data.userId || 'emp-user',
+      userId: data.userId || data.employeeId || 'emp-user',
       email: data.email || email,
       role: data.role || role,
       name: data.name || name,

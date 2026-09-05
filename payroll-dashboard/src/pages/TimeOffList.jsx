@@ -79,7 +79,10 @@ export function TimeOffList() {
       if (Array.isArray(empData)) {
         setEmployeesList(empData);
         if (empData.length > 0 && !newReqEmployee) {
-          setNewReqEmployee(empData[0].id);
+          const defaultEmp = session?.employeeId && empData.some(e => e.id === session.employeeId)
+            ? session.employeeId
+            : empData[0].id;
+          setNewReqEmployee(defaultEmp);
         }
       }
       if (Array.isArray(typeData) && typeData.length > 0 && !newReqType) {

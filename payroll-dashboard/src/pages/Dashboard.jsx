@@ -23,41 +23,71 @@ const periodOptions = [
   { value: '2026-06', label: 'June 2026' },
 ];
 
-function BarChart({ data, maxValue, height = 200 }) {
+function BarChart({ data, maxValue, height = 220 }) {
   if (!data || data.length === 0) {
     return (
-      <div className="h-48 flex items-center justify-center text-sm text-gray-400">
+      <div className="h-56 flex flex-col items-center justify-center text-sm text-gray-400 border border-dashed border-gray-200 rounded-xl">
+        <svg className="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
         No department cost data recorded.
       </div>
     );
   }
 
+  const gridTicks = [1, 0.75, 0.5, 0.25, 0];
+
   return (
-    <div className="h-full flex items-end gap-3 px-2 pb-2" role="img" aria-label="Salary cost by department bar chart">
-      {data.map((item, index) => (
-        <div key={item.department} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-          <div 
-            className="w-full relative rounded-full transition-all duration-500 cursor-pointer group"
-            style={{ height: `${Math.max((item.amount / maxValue) * height, 12)}px`, background: 'var(--color-cream)' }}
-            title={`${item.department}: ${formatCurrency(item.amount)} (${item.count} employees, ${item.percentage}%)`}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="absolute inset-0 rounded-full transition-opacity"
-              style={{ background: index === 0 ? 'var(--color-ink-900)' : 'var(--color-accent-500)' }} />
+    <div className="relative pt-6 pb-2">
+      {/* Background horizontal gridlines */}
+      <div className="absolute inset-0 top-6 bottom-10 flex flex-col justify-between pointer-events-none">
+        {gridTicks.map((ratio, i) => (
+          <div key={i} className="w-full flex items-center gap-2">
+            <span className="text-[10px] font-mono text-gray-400 w-12 text-right shrink-0">
+              {formatCurrency(maxValue * ratio)}
+            </span>
+            <div className="w-full border-b border-dashed border-gray-200 dark:border-gray-800" />
           </div>
-          <span className="text-xs font-semibold text-ink-900 text-center truncate w-full">{item.department}</span>
-          <span className="text-xs font-medium text-gray-600">{formatCurrency(item.amount)}</span>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      <div className="h-56 pl-14 flex items-end gap-3.5 relative z-10" role="img" aria-label="Salary cost by department bar chart">
+        {data.map((item, index) => {
+          const barHeightPercent = Math.max((item.amount / maxValue) * 100, 4);
+          const isHighest = index === 0;
+          return (
+            <div key={item.department} className="flex-1 flex flex-col items-center justify-end h-full min-w-0 group">
+              {/* Tooltip on hover */}
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity mb-2 px-2.5 py-1 bg-ink-900 text-white text-[11px] font-mono rounded-md shadow-md pointer-events-none whitespace-nowrap z-20">
+                {item.department}: {formatCurrency(item.amount)} ({item.percentage}%)
+              </div>
+
+              {/* Square bar container */}
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-sm relative overflow-hidden transition-all duration-300 hover:bg-gray-200" style={{ height: `${barHeightPercent}%` }}>
+                <div 
+                  className={`w-full h-full rounded-sm transition-all duration-500 ${
+                    isHighest 
+                      ? 'bg-ink-900 dark:bg-accent-500 shadow-sm' 
+                      : 'bg-accent-500/85 hover:bg-accent-500'
+                  }`}
+                />
+              </div>
+
+              <div className="mt-2.5 text-center w-full">
+                <p className="text-xs font-semibold text-ink-900 truncate">{item.department}</p>
+                <p className="text-[11px] font-mono font-medium text-gray-500 mt-0.5">{formatCurrency(item.amount)}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function LineChart({ data, height = 200 }) {
+function LineChart({ data, height = 220 }) {
   if (!data || data.length === 0) {
     return (
-      <div className="h-48 flex items-center justify-center text-sm text-gray-400">
+      <div className="h-56 flex flex-col items-center justify-center text-sm text-gray-400 border border-dashed border-gray-200 rounded-xl">
+        <svg className="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
         No monthly trend data recorded.
       </div>
     );
@@ -67,46 +97,73 @@ function LineChart({ data, height = 200 }) {
   const minValue = Math.min(...data.map(d => d.totalNet), 0);
   const range = maxValue - minValue || 1;
   
-  const points = data.map((item, index) => {
+  const pointsArray = data.map((item, index) => {
     const x = data.length > 1 ? (index / (data.length - 1)) * 100 : 50;
-    const y = 100 - ((item.totalNet - minValue) / range) * 80 - 10;
-    return `${x},${y.toFixed(1)}`;
-  }).join(' ');
-  
+    const y = 100 - ((item.totalNet - minValue) / range) * 75 - 12;
+    return { x, y, month: item.month, totalNet: item.totalNet, payslipCount: item.payslipCount };
+  });
+
+  const polylinePoints = pointsArray.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaPoints = `0,100 ${polylinePoints} 100,100`;
+
   return (
-    <div className="relative h-48" role="img" aria-label="Monthly net salary trend line chart">
-      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <div className="relative h-56 pt-2 pb-6" role="img" aria-label="Monthly net salary trend line chart">
+      {/* Dashed background grid lines */}
+      <div className="absolute inset-0 top-2 bottom-8 flex flex-col justify-between pointer-events-none">
+        {[1, 0.66, 0.33, 0].map((ratio, i) => (
+          <div key={i} className="w-full border-b border-dashed border-gray-100 dark:border-gray-800" />
+        ))}
+      </div>
+
+      <svg className="w-full h-full relative z-10 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="lineTrendGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-accent-500)" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="var(--color-accent-500)" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+
+        {/* Filled area under curve */}
+        {data.length > 1 && (
+          <polygon points={areaPoints} fill="url(#lineTrendGradient)" />
+        )}
+
+        {/* Crisp line */}
         {data.length > 1 && (
           <polyline 
             fill="none" 
             stroke="var(--color-accent-500)" 
             strokeWidth="2.5" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            points={points} 
+            strokeLinecap="square" 
+            strokeLinejoin="miter" 
+            points={polylinePoints} 
             vectorEffect="non-scaling-stroke"
           />
         )}
-        {data.map((item, index) => {
-          const x = data.length > 1 ? (index / (data.length - 1)) * 100 : 50;
-          const y = 100 - ((item.totalNet - minValue) / range) * 80 - 10;
-          return (
-            <circle
-              key={item.month}
-              cx={x}
-              cy={y}
-              r="3.5"
-              fill="var(--color-accent-500)"
-              stroke="#fff"
-              strokeWidth="1.5"
+
+        {/* Squared datapoints */}
+        {pointsArray.map((p) => (
+          <g key={p.month} className="group cursor-pointer">
+            <rect
+              x={p.x - 1.5}
+              y={p.y - 1.5}
+              width="3"
+              height="3"
+              rx="0.5"
+              ry="0.5"
+              fill="var(--color-ink-900)"
+              stroke="var(--color-accent-500)"
+              strokeWidth="1.2"
               vectorEffect="non-scaling-stroke"
             >
-              <title>{`${item.month}: ${formatCurrency(item.totalNet)} (${item.payslipCount} payslips)`}</title>
-            </circle>
-          );
-        })}
+              <title>{`${p.month}: ${formatCurrency(p.totalNet)} (${p.payslipCount} payslips)`}</title>
+            </rect>
+          </g>
+        ))}
       </svg>
-      <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs font-medium text-gray-700 px-2">
+
+      {/* Axis X Month Labels */}
+      <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs font-mono font-semibold text-gray-600 px-1">
         {data.map((item) => (
           <span key={item.month}>{item.month}</span>
         ))}
@@ -120,17 +177,17 @@ function MiniBarChart({ data, height = 100 }) {
   const maxValue = Math.max(...data.map(d => d.count), 1);
   
   return (
-    <div className="h-24 flex items-end gap-2 px-1 pb-1" role="img" aria-label="Attendance overview chart">
+    <div className="h-28 flex items-end gap-2.5 px-1 pb-1" role="img" aria-label="Attendance overview chart">
       {data.map(item => (
-        <div key={item.status} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${item.status}: ${item.count} (${item.percentage}%)`}>
+        <div key={item.status} className="flex-1 flex flex-col items-center gap-1.5 min-w-0" title={`${item.status}: ${item.count} (${item.percentage}%)`}>
           <div 
-            className="w-full bg-gray-100 rounded-t transition-all duration-500"
-            style={{ height: `${Math.max((item.count / maxValue) * height, 6)}px` }}
+            className="w-full bg-gray-100 dark:bg-gray-800 rounded-sm overflow-hidden transition-all duration-300"
+            style={{ height: `${Math.max((item.count / maxValue) * height, 8)}px` }}
           >
-            <div className={`h-full rounded-t ${item.status === 'Present' ? 'bg-success' : item.status === 'Late' ? 'bg-warning' : 'bg-error'}`} />
+            <div className={`h-full rounded-sm ${item.status === 'Present' ? 'bg-success' : item.status === 'Late' ? 'bg-warning' : 'bg-error'}`} />
           </div>
-          <span className="text-[10px] font-semibold text-ink-900 text-center truncate w-full">{item.status}</span>
-          <span className="text-[10px] font-medium text-gray-600">{item.count}</span>
+          <span className="text-[11px] font-semibold text-ink-900 text-center truncate w-full">{item.status}</span>
+          <span className="text-[10px] font-mono font-medium text-gray-500">{item.count}</span>
         </div>
       ))}
     </div>

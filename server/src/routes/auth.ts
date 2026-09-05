@@ -48,6 +48,7 @@ router.post(
 
     return res.json({
       token,
+      userId: user.id,
       role: user.role,
       employeeId: user.employee?.id,
       name: user.employee?.name || user.email.split('@')[0],
@@ -110,6 +111,7 @@ router.post(
 
     return res.status(201).json({
       token,
+      userId: user.id,
       role: user.role,
       employeeId: user.employee?.id,
       name: user.employee?.name || user.email.split('@')[0],

@@ -37,7 +37,7 @@ async function apiRequest(endpoint, options = {}) {
       if (response.status === 401 && !endpoint.includes('/auth/')) {
         localStorage.removeItem('token');
         localStorage.removeItem('pp360_session');
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
           window.location.href = '/login';
         }
       }
