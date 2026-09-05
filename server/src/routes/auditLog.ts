@@ -39,8 +39,32 @@ router.get(
       prisma.auditLog.count({ where }),
     ]);
 
+    const userIds = Array.from(new Set(logs.map((l) => l.userId).filter(Boolean)));
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true, employee: { select: { name: true } } },
+    });
+    const userMap = new Map(
+      users.map((u) => [
+        u.id,
+        {
+          email: u.email,
+          name: u.employee?.name || u.email.split('@')[0],
+        },
+      ])
+    );
+
+    const logsWithUser = logs.map((l) => {
+      const userInfo = userMap.get(l.userId);
+      return {
+        ...l,
+        userName: userInfo?.name || l.userId,
+        userEmail: userInfo?.email || null,
+      };
+    });
+
     return res.json({
-      data: logs,
+      data: logsWithUser,
       pagination: {
         page: Math.floor(skip / take) + 1,
         limit: take,

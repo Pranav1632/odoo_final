@@ -26,7 +26,8 @@ export function AuditLog() {
         setAuditLogsList(aLogs.map(l => ({
           id: l.id,
           timestamp: l.createdAt ? new Date(l.createdAt).toLocaleString() : 'Recent',
-          userName: l.userId || 'System',
+          userName: l.userName || l.userEmail || l.userId || 'System',
+          userEmail: l.userEmail,
           userId: l.userId,
           action: l.action,
           entityType: l.entityType,
@@ -66,6 +67,7 @@ export function AuditLog() {
       const matchEntity = entityFilter === 'all' || log.entityType === entityFilter;
       const matchSearch = !search || 
         (log.userName && log.userName.toLowerCase().includes(search.toLowerCase())) ||
+        (log.userEmail && log.userEmail.toLowerCase().includes(search.toLowerCase())) ||
         (log.action && log.action.toLowerCase().includes(search.toLowerCase())) ||
         (log.entityType && log.entityType.toLowerCase().includes(search.toLowerCase())) ||
         (log.entityId && log.entityId.toLowerCase().includes(search.toLowerCase()));
@@ -86,8 +88,11 @@ export function AuditLog() {
     { key: 'timestamp', header: 'Timestamp', width: '160px', render: (row) => (
       <span className="font-mono text-xs text-gray-700">{row.timestamp}</span>
     )},
-    { key: 'userName', header: 'User', width: '160px', render: (row) => (
-      <span className="font-medium text-gray-900">{row.userName}</span>
+    { key: 'userName', header: 'User', width: '180px', render: (row) => (
+      <div>
+        <p className="font-semibold text-gray-900 text-sm">{row.userName}</p>
+        {row.userEmail && <p className="text-[11px] font-mono text-gray-500">{row.userEmail}</p>}
+      </div>
     )},
     { key: 'action', header: 'Action', width: '180px', render: (row) => (
       <Badge variant="primary">{row.action}</Badge>
