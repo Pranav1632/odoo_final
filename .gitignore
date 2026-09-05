@@ -1,3 +1,9 @@
 PERSON_A_BACKEND_STUDY_GUIDE.md
 db_architecture.html
 db_architecture.svg
+
+# Database & generated data directories
+.pgdata/
+*.pgdata
+server/.pgdata/
+server/powershell.cmd
