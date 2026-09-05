@@ -1,12 +1,22 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import { prisma } from '../lib/prisma';
 import { asyncHandler } from '../lib/asyncHandler';
 import { writeAuditLog } from '../lib/audit';
 import { z } from 'zod';
 
 const router = Router();
+
+// Rate limiting for auth endpoints: max 15 requests per 15 minutes per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: 'Too many auth requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -16,6 +26,7 @@ const loginSchema = z.object({
 // POST /api/auth/login
 router.post(
   '/login',
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
 
@@ -68,12 +79,10 @@ const registerSchema = z.object({
 });
 
 // POST /api/auth/register
-// Self-registration always creates an EMPLOYEE account with status 'pending' — it
-// cannot log in until an Admin/HR approves it (and, at that point, can adjust the
-// role — see PATCH /api/users/:id). Role assignment/escalation is never a
-// caller-supplied field on this public endpoint.
+// Self-registration creates an account with default status 'pending' (defined in Prisma schema default).
 router.post(
   '/register',
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { email, password, name } = registerSchema.parse(req.body);
 
@@ -92,7 +101,6 @@ router.post(
         email,
         password: hashedPassword,
         role: role as any,
-        status: 'active',
         employee: {
           create: {
             name: name || email.split('@')[0],

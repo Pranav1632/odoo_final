@@ -244,7 +244,10 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    fetchMetrics();
+    const timer = setTimeout(() => {
+      fetchMetrics();
+    }, 150);
+    return () => clearTimeout(timer);
   }, [filters.department, filters.period, filters.employmentType]);
 
   const handleFilterChange = (key, value) => {
