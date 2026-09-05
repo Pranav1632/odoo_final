@@ -99,7 +99,7 @@ Both of the PS's suggested demo scenarios were verified working live in this ses
 
 ## 8) Deliverables
 
-- **Functional platform**: ✅ Confirmed live and operational end-to-end, populated with realistic seed data (55 users, 100 contracts, ~1,400 attendance records, 100 allocations, 2 historical payruns), backed by a 95/95-passing automated test suite.
+- **Functional platform**: ✅ Confirmed live and operational end-to-end, populated with realistic seed data (55 users,, 100 contracts, ~1,400 attendance records, 100 allocations, 2 historical payruns), backed by a 95/95-passing automated test suite.
 - **Live demonstration readiness**: ✅ Both PS-suggested scenarios (employee-to-payslip, leave allocation-to-request) plus the account-provisioning flow all work end-to-end and were exercised live, including a real send-payslips run that landed a real email (with PDF attached) in Mailpit.
 - **Future roadmap**: see recommendations below and `BUSINESS_LOGIC_REVIEW.md` (this is the PS's own ask for "a brief summary of proposed enhancements").
 
