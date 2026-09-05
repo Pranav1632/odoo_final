@@ -1,6 +1,6 @@
-import { getActiveContractForPeriod } from '../../lib/contractUtils';
+import { findActiveContractForPeriod } from '../../lib/contractUtils';
 
-describe('getActiveContractForPeriod', () => {
+describe('findActiveContractForPeriod', () => {
   const periodStart = new Date('2026-01-01');
   const periodEnd = new Date('2026-01-31');
 
@@ -22,7 +22,7 @@ describe('getActiveContractForPeriod', () => {
       },
     ];
 
-    const result = getActiveContractForPeriod(contracts, periodStart, periodEnd);
+    const result = findActiveContractForPeriod(contracts, periodStart, periodEnd);
     expect(result).not.toBeNull();
     expect(result?.id).toBe('c2');
   });
@@ -38,7 +38,7 @@ describe('getActiveContractForPeriod', () => {
       },
     ];
 
-    const result = getActiveContractForPeriod(contracts, periodStart, periodEnd);
+    const result = findActiveContractForPeriod(contracts, periodStart, periodEnd);
     expect(result).toBeNull();
   });
 
@@ -60,7 +60,7 @@ describe('getActiveContractForPeriod', () => {
       },
     ];
 
-    const result = getActiveContractForPeriod(contracts, periodStart, periodEnd);
+    const result = findActiveContractForPeriod(contracts, periodStart, periodEnd);
     expect(result).not.toBeNull();
     expect(result?.id).toBe('c2');
   });
