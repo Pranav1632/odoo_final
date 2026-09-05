@@ -205,7 +205,7 @@ export function AuthPage({ onLoginSuccess }) {
                   mode === 'login'
                     ? SEED_USERS.map((user) => ({
                         value: user.role,
-                        label: `${formatRoleName(user.role)} — ${user.name}`,
+                        label: formatRoleName(user.role),
                       }))
                     : [
                         { value: 'EMPLOYEE', label: 'Employee' },
