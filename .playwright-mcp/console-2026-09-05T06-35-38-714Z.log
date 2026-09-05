@@ -1,3 +1,0 @@
-[     110ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5180/node_modules/.vite/deps/react-dom_client.js?v=32fb3cfd:14335
-[  442992ms] [ERROR] Error: <polyline> attribute points: Expected number, "0% 100%, 20% 69.5…". @ http://localhost:5180/node_modules/.vite/deps/react-dom_client.js?v=32fb3cfd:1232
-[  442993ms] [ERROR] Error: <polyline> attribute points: Expected number, "0% 100%, 20% 69.5…". @ http://localhost:5180/node_modules/.vite/deps/react-dom_client.js?v=32fb3cfd:1232
