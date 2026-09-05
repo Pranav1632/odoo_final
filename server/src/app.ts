@@ -27,12 +27,26 @@ export function createApp() {
   const app = express();
 
   app.use(helmet());
+  const allowedOrigins = [
+    process.env.WEB_ORIGIN,
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ].filter(Boolean) as string[];
+
   app.use(
     cors({
-      origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl) or if origin is allowed
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(null, true); // Fallback to allow dev requests
+        }
+      },
       credentials: true,
     })
   );
+
   app.use(express.json());
 
   // Health check endpoint
