@@ -1,0 +1,124 @@
+- generic [ref=f7e3]:
+  - banner [ref=f7e4]:
+    - generic [ref=f7e5]:
+      - link "PeoplePay360 Home" [ref=f7e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f7e7]: P
+      - generic [ref=f7e8]:
+        - button "Notifications" [ref=f7e10]:
+          - generic [ref=f7e13]: "3"
+        - button "User menu" [ref=f7e15]:
+          - generic [ref=f7e16]: ER
+  - generic [ref=f7e18]:
+    - complementary "Sidebar navigation" [ref=f7e19]:
+      - generic [ref=f7e20]:
+        - navigation "Module navigation" [ref=f7e21]:
+          - link "Dashboard" [ref=f7e22] [cursor=pointer]:
+            - /url: /
+          - link "Employees" [ref=f7e25] [cursor=pointer]:
+            - /url: /employees
+          - link "Contracts" [ref=f7e28] [cursor=pointer]:
+            - /url: /contracts
+          - link "Attendance" [ref=f7e31] [cursor=pointer]:
+            - /url: /attendance
+          - link "Time Off" [ref=f7e34] [cursor=pointer]:
+            - /url: /time-off
+          - link "Payroll" [ref=f7e37] [cursor=pointer]:
+            - /url: /payroll/payruns
+          - link "Reports" [ref=f7e40] [cursor=pointer]:
+            - /url: /reports
+        - generic [ref=f7e43]: Settings
+    - main [ref=f7e47]:
+      - generic [ref=f7e49]:
+        - navigation "Breadcrumb" [ref=f7e50]:
+          - list [ref=f7e51]:
+            - listitem [ref=f7e52]:
+              - link "Home" [ref=f7e53] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f7e54]:
+              - link "Payroll" [ref=f7e57] [cursor=pointer]:
+                - /url: /payroll/payruns
+            - listitem [ref=f7e58]:
+              - generic [ref=f7e61]: Payruns
+        - generic [ref=f7e62]:
+          - generic [ref=f7e63]:
+            - heading "Payruns" [level=1] [ref=f7e64]
+            - paragraph [ref=f7e65]: Showing 3 payruns
+          - button "+ New Payrun" [ref=f7e67] [cursor=pointer]
+        - generic [ref=f7e68]:
+          - textbox "Search by name or period" [ref=f7e70]
+          - combobox [ref=f7e72]:
+            - option "All Statuses" [selected]
+            - option "Draft"
+            - option "Computed"
+            - option "Validated"
+            - option "Paid"
+          - combobox [ref=f7e74]:
+            - option "All Periods" [selected]
+            - option "August 2025"
+            - option "July 2025"
+            - option "June 2025"
+          - combobox [ref=f7e76]:
+            - option "All Structures" [selected]
+            - option "Regular Monthly Salary"
+            - option "Freelance Contract"
+          - button "Clear Filters" [ref=f7e77] [cursor=pointer]
+        - grid [ref=f7e81]:
+          - rowgroup [ref=f7e82]:
+            - row [ref=f7e83]:
+              - columnheader [ref=f7e84]:
+                - checkbox [ref=f7e85]
+              - columnheader "Payrun Name" [ref=f7e86]
+              - columnheader "Period" [ref=f7e87]
+              - columnheader "Salary Structure" [ref=f7e88]
+              - columnheader "Employees" [ref=f7e89]
+              - columnheader "Total Net" [ref=f7e90]
+              - columnheader "Status" [ref=f7e91]
+              - columnheader "Created By" [ref=f7e92]
+              - columnheader "Actions" [ref=f7e93]
+          - rowgroup [ref=f7e94]:
+            - row [ref=f7e95] [cursor=pointer]:
+              - gridcell [ref=f7e96]:
+                - checkbox [ref=f7e97]
+              - gridcell [ref=f7e98]:
+                - generic [ref=f7e99]:
+                  - paragraph [ref=f7e100]: August 2025 Payroll
+                  - paragraph [ref=f7e101]: 2025-08-01 – 2025-08-31
+              - gridcell "Aug 1, 2025 – Aug 31, 2025" [ref=f7e102]
+              - gridcell "Regular Monthly Salary" [ref=f7e103]
+              - gridcell "8" [ref=f7e104]
+              - gridcell "$485,000" [ref=f7e105]
+              - gridcell "Validated" [ref=f7e106]
+              - gridcell "Lisa Wang" [ref=f7e109]
+              - gridcell [ref=f7e110]:
+                - button "View" [ref=f7e111]
+            - row [ref=f7e112] [cursor=pointer]:
+              - gridcell [ref=f7e113]:
+                - checkbox [ref=f7e114]
+              - gridcell [ref=f7e115]:
+                - generic [ref=f7e116]:
+                  - paragraph [ref=f7e117]: July 2025 Payroll
+                  - paragraph [ref=f7e118]: 2025-07-01 – 2025-07-31
+              - gridcell "Jul 1, 2025 – Jul 31, 2025" [ref=f7e119]
+              - gridcell "Regular Monthly Salary" [ref=f7e120]
+              - gridcell "7" [ref=f7e121]
+              - gridcell "$425,000" [ref=f7e122]
+              - gridcell "Paid" [ref=f7e123]
+              - gridcell "Lisa Wang" [ref=f7e128]
+              - gridcell [ref=f7e129]:
+                - button "View" [ref=f7e130]
+            - row [ref=f7e131] [cursor=pointer]:
+              - gridcell [ref=f7e132]:
+                - checkbox [ref=f7e133]
+              - gridcell [ref=f7e134]:
+                - generic [ref=f7e135]:
+                  - paragraph [ref=f7e136]: August 2025 Freelance Payments
+                  - paragraph [ref=f7e137]: 2025-08-01 – 2025-08-31
+              - gridcell "Aug 1, 2025 – Aug 31, 2025" [ref=f7e138]
+              - gridcell "Freelance Contract" [ref=f7e139]
+              - gridcell "2" [ref=f7e140]
+              - gridcell "$0" [ref=f7e141]
+              - gridcell "Draft" [ref=f7e142]
+              - gridcell "Maria Garcia" [ref=f7e145]
+              - gridcell [ref=f7e146]:
+                - button "View" [ref=f7e147]

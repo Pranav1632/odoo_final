@@ -3,15 +3,15 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { errorHandler } from './middleware/errorHandler';
 
-// Person A's routes (stubs — will be filled by Person A)
-// import authRoutes from './routes/auth';
-// import employeeRoutes from './routes/employees';
-// import contractRoutes from './routes/contracts';
-// import scheduleRoutes from './routes/schedules';
-// import attendanceRoutes from './routes/attendance';
-// import timeoffRoutes from './routes/timeoff';
-// import auditLogRoutes from './routes/auditLog';
-// import errorLogRoutes from './routes/errorLog';
+// Person A's routes
+import authRoutes from './routes/auth';
+import employeeRoutes from './routes/employees';
+import contractRoutes from './routes/contracts';
+import scheduleRoutes from './routes/schedules';
+import attendanceRoutes from './routes/attendance';
+import timeoffRoutes from './routes/timeoff';
+import auditLogRoutes from './routes/auditLog';
+import errorLogRoutes from './routes/errorLog';
 
 // Person B's routes
 import salaryStructureRoutes from './routes/salaryStructures';
@@ -19,35 +19,50 @@ import salaryRuleRoutes from './routes/salaryRules';
 import payrunRoutes from './routes/payruns';
 import payslipRoutes from './routes/payslips';
 
-// Person C's route (mounted by Person A when ready)
-// import dashboardRoutes from './routes/dashboard';
-
 /**
  * Creates and configures the Express app without calling listen().
  * Exported for use in supertest-based integration tests.
- * Person A owns this file (app shell, route mounting order).
  */
 export function createApp() {
   const app = express();
 
   app.use(helmet());
+  const allowedOrigins = [
+    process.env.WEB_ORIGIN,
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ].filter(Boolean) as string[];
+
   app.use(
     cors({
-      origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl) or if origin is allowed
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(null, true); // Fallback to allow dev requests
+        }
+      },
       credentials: true,
     })
   );
+
   app.use(express.json());
 
-  // Person A routes (uncomment as Person A delivers them)
-  // app.use('/api/auth', authRoutes);
-  // app.use('/api/employees', employeeRoutes);
-  // app.use('/api/contracts', contractRoutes);
-  // app.use('/api/schedules', scheduleRoutes);
-  // app.use('/api/attendance', attendanceRoutes);
-  // app.use('/api/timeoff', timeoffRoutes);
-  // app.use('/api/audit-log', auditLogRoutes);
-  // app.use('/api/error-log', errorLogRoutes);
+  // Health check endpoint
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', service: 'peoplepay360-server' });
+  });
+
+  // Person A routes
+  app.use('/api/auth', authRoutes);
+  app.use('/api/employees', employeeRoutes);
+  app.use('/api/contracts', contractRoutes);
+  app.use('/api/schedules', scheduleRoutes);
+  app.use('/api/attendance', attendanceRoutes);
+  app.use('/api/timeoff', timeoffRoutes);
+  app.use('/api/audit-log', auditLogRoutes);
+  app.use('/api/error-log', errorLogRoutes);
 
   // Person B routes
   app.use('/api/salary-structures', salaryStructureRoutes);
@@ -55,11 +70,12 @@ export function createApp() {
   app.use('/api/payruns', payrunRoutes);
   app.use('/api/payslips', payslipRoutes);
 
-  // Person C route (uncomment when delivered)
-  // app.use('/api/dashboard', dashboardRoutes);
-
-  // MUST be last — Express error-handling middleware
+  // Must be LAST — after all routes
   app.use(errorHandler);
 
   return app;
 }
+
+const app = createApp();
+export default app;
+

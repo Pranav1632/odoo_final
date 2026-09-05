@@ -1,3 +1,6 @@
-.env
 node_modules/
 dist/
+.env
+*.js.map
+
+/src/generated/prisma

@@ -62,8 +62,9 @@ router.get(
   requireAuth,
   requireRole(['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
+    const id = req.params.id as string;
     const structure = await prisma.salaryStructure.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         rules: { orderBy: { sequence: 'asc' } },
         _count: { select: { contracts: true } },
@@ -82,15 +83,16 @@ router.patch(
   requireRole(['HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
     const body = updateSchema.parse(req.body);
 
     const existing = await prisma.salaryStructure.findUnique({
-      where: { id: req.params.id },
+      where: { id },
     });
     if (!existing) throw new ApiError(404, 'Salary structure not found');
 
     const updated = await prisma.salaryStructure.update({
-      where: { id: req.params.id },
+      where: { id },
       data: body,
     });
 
@@ -112,9 +114,10 @@ router.delete(
   requireRole(['HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
+    const id = req.params.id as string;
 
     const existing = await prisma.salaryStructure.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: { _count: { select: { contracts: true, payruns: true } } },
     });
     if (!existing) throw new ApiError(404, 'Salary structure not found');
@@ -126,17 +129,18 @@ router.delete(
       );
     }
 
-    await prisma.salaryStructure.delete({ where: { id: req.params.id } });
+    await prisma.salaryStructure.delete({ where: { id } });
 
     await writeAuditLog({
       userId: session.userId,
       action: 'DELETE_SALARY_STRUCTURE',
       entityType: 'SalaryStructure',
-      entityId: req.params.id,
+      entityId: id,
     });
 
     res.status(204).send();
   })
 );
+
 
 export default router;
