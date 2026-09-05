@@ -50,8 +50,8 @@ function BarChart({ data, maxValue, height = 200 }) {
             <div className="absolute inset-0 rounded-full transition-opacity"
               style={{ background: index === 0 ? 'var(--color-ink-900)' : 'var(--color-accent-500)' }} />
           </div>
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center truncate w-full">{item.department}</span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(item.amount)}</span>
+          <span className="text-xs font-semibold text-ink-900 text-center truncate w-full">{item.department}</span>
+          <span className="text-xs font-medium text-gray-600">{formatCurrency(item.amount)}</span>
         </div>
       ))}
     </div>
@@ -100,7 +100,7 @@ function LineChart({ data, height = 200, color = 'accent-500' }) {
           );
         })}
       </svg>
-      <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 px-2">
+      <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs font-medium text-gray-700 px-2">
         {data.map((item, index) => (
           <span key={item.month} style={{ left: `${(index / (data.length - 1)) * 100}%` }}>{item.month}</span>
         ))}
@@ -117,13 +117,13 @@ function MiniBarChart({ data, height = 100 }) {
       {data.map(item => (
         <div key={item.status} className="flex-1 flex flex-col items-center gap-1 min-w-0" title={`${item.status}: ${item.count} (${item.percentage}%)`}>
           <div 
-            className="w-full bg-gray-100 dark:bg-gray-800 rounded-t transition-all duration-500"
+            className="w-full bg-gray-100 rounded-t transition-all duration-500"
             style={{ height: `${Math.max((item.count / maxValue) * height, 4)}px` }}
           >
             <div className={`h-full rounded-t ${['bg-success', 'bg-warning', 'bg-error', 'bg-info'][data.indexOf(item)] || 'bg-gray-400'}`} />
           </div>
-          <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center truncate w-full">{item.status}</span>
-          <span className="text-[10px] text-gray-500 dark:text-gray-400">{item.count}</span>
+          <span className="text-[10px] font-semibold text-ink-900 text-center truncate w-full">{item.status}</span>
+          <span className="text-[10px] font-medium text-gray-600">{item.count}</span>
         </div>
       ))}
     </div>
@@ -265,7 +265,7 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Salary Cost by Department</h3>
+              <h3 className="text-lg font-semibold text-ink-900">Salary Cost by Department</h3>
               <Badge variant="primary" size="sm">Live</Badge>
             </div>
           </CardHeader>
@@ -276,7 +276,7 @@ export function Dashboard() {
         
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Monthly Net Salary Trend</h3>
+            <h3 className="text-lg font-semibold text-ink-900">Monthly Net Salary Trend</h3>
           </CardHeader>
           <CardBody>
             <LineChart data={chartData.monthlyTrend} height={220} />
@@ -287,7 +287,7 @@ export function Dashboard() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Operational Alerts</h3>
+            <h3 className="text-lg font-semibold text-ink-900">Operational Alerts</h3>
             <Button variant="ghost" size="sm">View All</Button>
           </div>
         </CardHeader>
@@ -301,25 +301,25 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Attendance Overview — August 2025</h3>
+            <h3 className="text-lg font-semibold text-ink-900">Attendance Overview — August 2025</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
               <MiniBarChart data={chartData.attendanceOverview} height={100} />
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">6</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Missing Check-Outs</p>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-ink-900">6</p>
+                  <p className="text-xs text-gray-600">Missing Check-Outs</p>
                   <Button variant="link" size="sm" className="mt-1">Review →</Button>
                 </div>
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Manual Edits</p>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-ink-900">12</p>
+                  <p className="text-xs text-gray-600">Manual Edits</p>
                   <Button variant="link" size="sm" className="mt-1">Audit Log →</Button>
                 </div>
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">94.2%</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Coverage</p>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-ink-900">94.2%</p>
+                  <p className="text-xs text-gray-600">Coverage</p>
                 </div>
               </div>
             </div>
@@ -328,18 +328,18 @@ export function Dashboard() {
         
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Time Off Overview — August 2025</h3>
+            <h3 className="text-lg font-semibold text-ink-900">Time Off Overview — August 2025</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">89</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Approved Days Taken</p>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-3xl font-bold text-ink-900">89</p>
+                  <p className="text-sm text-gray-600">Approved Days Taken</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <p className="text-3xl font-bold text-warning dark:text-warning">4</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Pending Requests</p>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-3xl font-bold text-warning">4</p>
+                  <p className="text-sm text-gray-600">Pending Requests</p>
                   <Button variant="link" size="sm" className="mt-1">Review →</Button>
                 </div>
               </div>
@@ -347,14 +347,14 @@ export function Dashboard() {
                 {chartData.timeOffByType.map((item, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: item.color }}>
-                      <span className="text-white text-sm font-medium">{item.type.slice(0, 2)}</span>
+                      <span className="text-ink-900 text-sm font-semibold">{item.type.slice(0, 2)}</span>
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between text-sm">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{item.type}</span>
-                        <span className="text-gray-500 dark:text-gray-400">{item.days} days</span>
+                        <span className="font-medium text-gray-800">{item.type}</span>
+                        <span className="text-gray-600">{item.days} days</span>
                       </div>
-                      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mt-1">
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mt-1">
                         <div 
                           className="h-full rounded-full transition-all duration-500" 
                           style={{ width: `${(item.days / 52) * 100}%`, backgroundColor: item.color }}

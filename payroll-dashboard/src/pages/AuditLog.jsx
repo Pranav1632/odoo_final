@@ -68,7 +68,38 @@ const MOCK_AUDIT_LOGS = [
   }
 ];
 
+const MOCK_ERROR_LOGS = [
+  {
+    id: 'err-001',
+    timestamp: '2026-08-15 14:30:12',
+    endpoint: '/api/payruns/pr-001/compute',
+    statusCode: 400,
+    message: 'Rule HRA: formula produced non-finite value',
+    userId: 'emp-003',
+    stack: 'Error: Cannot divide by zero at computeSalaryRules (computeRules.ts:104)'
+  },
+  {
+    id: 'err-002',
+    timestamp: '2026-08-14 09:12:44',
+    endpoint: '/api/timeoff/requests/tor-002/approve',
+    statusCode: 400,
+    message: 'Insufficient balance. Requested 5, remaining 2',
+    userId: 'emp-003',
+    stack: 'ApiError: Insufficient balance at PATCH /api/timeoff/requests/:id/approve'
+  },
+  {
+    id: 'err-003',
+    timestamp: '2026-08-12 18:22:01',
+    endpoint: '/api/contracts',
+    statusCode: 409,
+    message: 'Employee already has an active contract. Expire the existing one first.',
+    userId: 'emp-005',
+    stack: 'ApiError: Duplicate active contract conflict'
+  }
+];
+
 export function AuditLog() {
+  const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'error'
   const [userFilter, setUserFilter] = useState('all');
   const [entityFilter, setEntityFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -92,6 +123,14 @@ export function AuditLog() {
       return matchUser && matchEntity && matchSearch;
     });
   }, [userFilter, entityFilter, search]);
+
+  const filteredErrorLogs = useMemo(() => {
+    return MOCK_ERROR_LOGS.filter(err => {
+      return !search || 
+        err.endpoint.toLowerCase().includes(search.toLowerCase()) ||
+        err.message.toLowerCase().includes(search.toLowerCase());
+    });
+  }, [search]);
 
   const columns = [
     { key: 'timestamp', header: 'Timestamp', width: '160px', render: (row) => (
@@ -121,39 +160,92 @@ export function AuditLog() {
     )},
   ];
 
+  const errorColumns = [
+    { key: 'timestamp', header: 'Timestamp', width: '160px', render: (row) => (
+      <span className="font-mono text-xs text-gray-700">{row.timestamp}</span>
+    )},
+    { key: 'statusCode', header: 'Status', width: '100px', render: (row) => (
+      <Badge variant={row.statusCode >= 500 ? 'error' : 'warning'}>{row.statusCode}</Badge>
+    )},
+    { key: 'endpoint', header: 'Endpoint', width: '220px', render: (row) => (
+      <span className="font-mono text-xs text-ink-900 font-semibold">{row.endpoint}</span>
+    )},
+    { key: 'message', header: 'Error Message', width: '260px', render: (row) => (
+      <span className="text-xs text-red-700 font-medium">{row.message}</span>
+    )},
+    { key: 'stack', header: 'Stack / Trace', width: '260px', render: (row) => (
+      <details className="cursor-pointer text-xs">
+        <summary className="text-gray-500 font-medium hover:underline">
+          View Stack Trace
+        </summary>
+        <pre className="mt-2 p-2 bg-red-50 text-red-900 rounded-lg text-[10px] overflow-x-auto max-w-sm font-mono">
+          {row.stack}
+        </pre>
+      </details>
+    )},
+  ];
+
   return (
     <div className="space-y-6" data-testid="audit-log-page">
       <Breadcrumb items={[
         { label: 'Home', href: '/' },
-        { label: 'Audit Log' },
+        { label: 'System Logs' },
       ]} />
 
       <PageHeader
-        title="Audit Log"
-        subtitle="Read-only chronological trail of system operations, status changes, and payroll actions"
+        title="System Logs"
+        subtitle="Read-only chronological trail of system operations, status changes, and runtime error logs"
       />
+
+      {/* Mode Switch Tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('audit')}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === 'audit'
+              ? 'border-ink-900 text-ink-900'
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          📋 Audit Trail ({MOCK_AUDIT_LOGS.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('error')}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === 'error'
+              ? 'border-ink-900 text-ink-900'
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          ⚠️ Error Log ({MOCK_ERROR_LOGS.length})
+        </button>
+      </div>
 
       <div className="filter-bar">
         <Input
-          placeholder="Search by action, ID, user..."
+          placeholder={activeTab === 'audit' ? "Search by action, ID, user..." : "Search error message or endpoint..."}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-64"
         />
-        <Select
-          label="User"
-          value={userFilter}
-          onChange={(e) => setUserFilter(e.target.value)}
-          options={users.map(u => ({ value: u, label: u === 'all' ? 'All Users' : u }))}
-          className="w-48"
-        />
-        <Select
-          label="Entity Type"
-          value={entityFilter}
-          onChange={(e) => setEntityFilter(e.target.value)}
-          options={entityTypes.map(t => ({ value: t, label: t === 'all' ? 'All Entity Types' : t }))}
-          className="w-48"
-        />
+        {activeTab === 'audit' && (
+          <>
+            <Select
+              label="User"
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              options={users.map(u => ({ value: u, label: u === 'all' ? 'All Users' : u }))}
+              className="w-48"
+            />
+            <Select
+              label="Entity Type"
+              value={entityFilter}
+              onChange={(e) => setEntityFilter(e.target.value)}
+              options={entityTypes.map(t => ({ value: t, label: t === 'all' ? 'All Entity Types' : t }))}
+              className="w-48"
+            />
+          </>
+        )}
         {(userFilter !== 'all' || entityFilter !== 'all' || search) && (
           <Button variant="ghost" size="sm" onClick={() => { setUserFilter('all'); setEntityFilter('all'); setSearch(''); }}>
             Clear Filters
@@ -164,10 +256,10 @@ export function AuditLog() {
       <Card>
         <CardBody className="p-0">
           <Table
-            columns={columns}
-            data={filteredLogs}
+            columns={activeTab === 'audit' ? columns : errorColumns}
+            data={activeTab === 'audit' ? filteredLogs : filteredErrorLogs}
             keyField="id"
-            emptyMessage="No audit log entries found matching filters"
+            emptyMessage={activeTab === 'audit' ? "No audit log entries found" : "No system errors logged"}
           />
         </CardBody>
       </Card>

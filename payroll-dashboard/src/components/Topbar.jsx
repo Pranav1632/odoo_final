@@ -15,27 +15,13 @@ const ALL_NAV_ITEMS = [
   { id: 'audit', label: 'Audit Log', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'] },
 ];
 
-export function Topbar({ currentPath, onNavigate, user }) {
+export function Topbar({ onNavigate, user, onToggleMobileNav }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const searchRef = useRef(null);
   const notifRef = useRef(null);
   const userMenuRef = useRef(null);
-
-  const userRole = user?.role || 'HR_PAYROLL_MANAGER';
-
-  const visibleNavItems = ALL_NAV_ITEMS.filter(item => {
-    if (item.roles.includes('ALL')) return true;
-    return item.roles.includes(userRole);
-  });
-
-  const userMenuItems = [
-    { label: 'Profile', onClick: () => { setUserMenuOpen(false); onNavigate('/profile'); } },
-    { label: 'Settings', onClick: () => { setUserMenuOpen(false); onNavigate('/settings'); } },
-    { divider: true },
-    { label: 'Sign Out', variant: 'danger', onClick: () => { setUserMenuOpen(false); /* no-op */ } },
-  ];
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -76,120 +62,127 @@ export function Topbar({ currentPath, onNavigate, user }) {
   return (
     <header className="fixed top-3 left-0 right-0 z-50 px-4" data-testid="topbar">
       <div 
-        className="max-w-full h-14 mx-2 flex items-center gap-4 pl-5 pr-3 rounded-full bg-white/90 shadow-soft backdrop-blur border border-black/[0.04]"
+        className="max-w-full h-14 mx-2 flex items-center justify-between gap-4 px-4 sm:px-5 rounded-full bg-white/90 shadow-soft backdrop-blur border border-black/[0.04]"
         style={{ backdropFilter: 'blur(12px)' }}
       >
-        <a 
-          href="/" 
-          onClick={(e) => { e.preventDefault(); onNavigate('/'); }} 
-          className="flex items-center gap-2 shrink-0" 
-          data-testid="topbar-logo"
-        >
-          <span className="w-8 h-8 rounded-full bg-ink-900 text-white flex items-center justify-center text-sm font-bold">P</span>
-          <span className="text-base font-bold tracking-tight hidden sm:block">peoplepay<span className="text-accent-500">360</span></span>
-        </a>
+        {/* Brand & Mobile Hamburger */}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={onToggleMobileNav}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:bg-cream lg:hidden transition-colors"
+            aria-label="Open navigation menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
 
-        <nav className="flex-1 flex items-center gap-1 overflow-x-auto hidden xl:flex scrollbar-none" role="navigation" aria-label="Main navigation">
-          {visibleNavItems.map(item => {
-            const isActive = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href));
-            return (
-              <a
-                key={item.id}
-                href={item.href}
-                onClick={(e) => { e.preventDefault(); onNavigate(item.href); }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-ink-900 text-white shadow-soft'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-cream'
-                }`}
-                data-testid={`topbar-nav-${item.id}`}
-              >
-                {item.label}
-              </a>
-            );
-          })}
-        </nav>
+          <a 
+            href="/" 
+            onClick={(e) => { e.preventDefault(); onNavigate('/'); }} 
+            className="flex items-center gap-2.5 shrink-0" 
+            data-testid="topbar-logo"
+          >
+            <span className="w-8 h-8 rounded-full bg-ink-900 text-white flex items-center justify-center text-sm font-bold shadow-sm">P</span>
+            <span className="text-base font-bold tracking-tight text-ink-900">peoplepay<span className="text-accent-500">360</span></span>
+          </a>
+        </div>
 
-        <div className="flex-1 max-w-sm hidden lg:block">
+        {/* Global Search Bar (Central Utility) */}
+        <div className="flex-1 max-w-md mx-4 hidden sm:block">
           <div className="relative" ref={searchRef}>
             <button
               onClick={() => setSearchOpen(true)}
-              className="w-full flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-cream text-gray-500 hover:bg-gray-200/70 transition-colors"
+              className="w-full flex items-center gap-2.5 px-4 py-2 rounded-full text-sm bg-cream text-gray-500 hover:bg-gray-200/70 transition-colors border border-black/[0.02]"
               aria-label="Global search"
               data-testid="global-search-trigger"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              <span>Search…</span>
-              <kbd className="ml-auto text-[10px] font-medium text-gray-400 bg-white rounded-full px-1.5 py-0.5">⌘K</kbd>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <span className="text-xs text-gray-500 font-medium">Search employees, contracts, payruns…</span>
+              <kbd className="ml-auto text-[10px] font-semibold text-gray-500 bg-white rounded-md px-1.5 py-0.5 border border-gray-200 shadow-2xs">⌘K</kbd>
             </button>
             {searchOpen && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-3xl shadow-xl border border-gray-100 animate-scale-in z-50 overflow-hidden">
                 <input
                   ref={searchRef}
                   placeholder="Search employees, contracts, payruns…"
-                  className="w-full px-4 py-3 border-0 bg-transparent font-medium focus:outline-none placeholder-gray-400"
+                  className="w-full px-4 py-3 border-0 bg-transparent text-sm font-medium text-ink-900 focus:outline-none placeholder-gray-400"
                   autoFocus
                 />
-                <div className="px-4 py-3 border-t border-gray-100 bg-cream/60 text-center">
-                  <p className="text-xs text-gray-500">Enter to search · Esc to close</p>
+                <div className="px-4 py-2.5 border-t border-gray-100 bg-cream/60 text-center">
+                  <p className="text-xs text-gray-500">Press Enter to search · Esc to close</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* Right Header Utilities: Quick Actions + Notifications + Profile */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Quick Payrun Shortcut */}
+          <button
+            onClick={() => onNavigate('/payroll/payruns/new')}
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent-50 text-accent-700 hover:bg-accent-100 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            <span>New Payrun</span>
+          </button>
+
+          {/* Notifications */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-cream transition-colors"
+              className="relative w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:text-ink-900 hover:bg-cream transition-colors"
               aria-label="Notifications"
               aria-expanded={notificationsOpen}
               data-testid="topbar-notifications"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-accent-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">3</span>
+              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              <span className="absolute top-1 right-1 w-4 h-4 bg-accent-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">3</span>
             </button>
             {notificationsOpen && (
               <div className="absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 animate-scale-in z-50 overflow-hidden">
-                <div className="p-4 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Notifications</h3>
+                <div className="p-4 flex items-center justify-between border-b border-gray-100">
+                  <h3 className="font-semibold text-sm text-ink-900">Notifications</h3>
                   <button className="text-xs font-medium text-accent-600 hover:underline">Mark all read</button>
                 </div>
-                <div className="max-h-96 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
                   {[
                     { id: 1, message: 'Payrun "August 2025" validated successfully', time: '2 min ago', read: false },
                     { id: 2, message: '5 employees missing bank details', time: '1 hour ago', read: false },
                     { id: 3, message: 'Contract CTR-000004 expiring in 30 days', time: '3 hours ago', read: true },
                   ].map(notif => (
-                    <button key={notif.id} className={`w-full px-4 py-3 text-left hover:bg-cream transition-colors ${!notif.read ? 'border-l-2 border-accent-500 bg-accent-50/40' : ''}`}>
-                      <p className="text-sm text-gray-900">{notif.message}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{notif.time}</p>
+                    <button key={notif.id} className={`w-full px-4 py-3 text-left hover:bg-cream transition-colors ${!notif.read ? 'border-l-2 border-accent-500 bg-accent-50/30' : ''}`}>
+                      <p className="text-xs font-medium text-ink-900 leading-snug">{notif.message}</p>
+                      <p className="text-[11px] text-gray-500 mt-1">{notif.time}</p>
                     </button>
                   ))}
                 </div>
-                <div className="p-3 border-t border-gray-100 text-center">
-                  <button className="text-sm font-medium text-accent-600 hover:underline">View all notifications</button>
+                <div className="p-2.5 border-t border-gray-100 bg-cream/50 text-center">
+                  <button className="text-xs font-medium text-accent-600 hover:underline">View all notifications</button>
                 </div>
               </div>
             )}
           </div>
 
+          {/* User Profile Trigger */}
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:ring-2 hover:ring-accent-100 transition-shadow"
+              className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full hover:bg-cream transition-colors border border-transparent hover:border-black/[0.04]"
               aria-label="User menu"
               aria-expanded={userMenuOpen}
               data-testid="topbar-user-menu"
             >
               <Avatar name={user?.name || 'User'} size="sm" />
+              <span className="text-xs font-semibold text-ink-900 hidden sm:block max-w-[100px] truncate">{user?.name || 'User'}</span>
+              <svg className="w-3.5 h-3.5 text-gray-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
             </button>
             {userMenuOpen && (
               <Dropdown
                 trigger={<div />}
                 items={[
-                  { label: 'Profile', onClick: () => { setUserMenuOpen(false); onNavigate('/profile'); } },
+                  { label: 'My Profile', onClick: () => { setUserMenuOpen(false); onNavigate('/profile'); } },
                   { label: 'Settings', onClick: () => { setUserMenuOpen(false); onNavigate('/settings'); } },
                   { divider: true },
                   { label: 'Sign Out', variant: 'danger', onClick: () => { setUserMenuOpen(false); } },

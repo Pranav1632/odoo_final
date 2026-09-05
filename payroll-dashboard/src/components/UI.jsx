@@ -315,8 +315,8 @@ export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md', c
       <div className={`modal ${sizes[size]} animate-scale-in ${className}`} onClick={e => e.stopPropagation()}>
         {(title || footer) && (
           <div className="modal-header">
-            <h3 id="modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-            <button onClick={onClose} className="btn-icon text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Close">
+            <h3 id="modal-title" className="text-lg font-semibold text-ink-900">{title}</h3>
+            <button onClick={onClose} className="btn-icon text-gray-400 hover:text-ink-900" aria-label="Close">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
@@ -395,10 +395,10 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000 }) => {
   return (
     <div className={`${types[type]} animate-slide-in`} role="alert" aria-live="polite">
       <div className="flex-1">
-        <p className="font-medium text-gray-900 dark:text-white">{type.charAt(0).toUpperCase() + type.slice(1)}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{message}</p>
+        <p className="font-semibold text-ink-900">{type.charAt(0).toUpperCase() + type.slice(1)}</p>
+        <p className="text-sm text-gray-700 mt-0.5">{message}</p>
       </div>
-      <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0" aria-label="Dismiss">
+      <button onClick={onClose} className="text-gray-400 hover:text-ink-900 flex-shrink-0" aria-label="Dismiss">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
@@ -426,15 +426,15 @@ export const Tooltip = ({ children, content, position = 'top' }) => {
 };
 
 export const Breadcrumb = ({ items }) => (
-  <nav className="breadcrumb-bar h-10 sticky top-14 bg-white dark:bg-primary-800 border-b border-gray-100 dark:border-primary-700 px-8" aria-label="Breadcrumb">
+  <nav className="breadcrumb-bar h-10 sticky top-14 bg-white/80 backdrop-blur-md border-b border-gray-100 px-8" aria-label="Breadcrumb">
     <ol className="flex items-center gap-1.5 text-sm max-w-7xl mx-auto h-full overflow-x-auto scrollbar-thin" role="list">
       {items.map((item, index) => (
         <li key={index} className="flex items-center gap-1.5">
           {index > 0 && <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>}
           {item.href ? (
-            <a href={item.href} className="text-gray-500 hover:text-gray-700 hover:underline dark:text-gray-400 dark:hover:text-gray-200">{item.label}</a>
+            <a href={item.href} className="text-gray-500 hover:text-ink-900 hover:underline">{item.label}</a>
           ) : (
-            <span className="text-gray-800 font-medium dark:text-gray-100" aria-current="page">{item.label}</span>
+            <span className="text-ink-900 font-semibold" aria-current="page">{item.label}</span>
           )}
         </li>
       ))}
@@ -445,8 +445,8 @@ export const Breadcrumb = ({ items }) => (
 export const PageHeader = ({ title, subtitle, actions, className = '' }) => (
   <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${className}`}>
     <div>
-      <h1 className="text-[1.65rem] leading-tight font-semibold tracking-[-0.02em] text-gray-900 dark:text-white">{title}</h1>
-      {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
+      <h1 className="text-[1.65rem] leading-tight font-semibold tracking-[-0.02em] text-ink-900">{title}</h1>
+      {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
     </div>
     {actions && (
       <div className="flex items-center gap-2 sm:ml-auto">

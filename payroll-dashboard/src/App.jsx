@@ -21,6 +21,7 @@ import { SalaryRuleForm } from './pages/SalaryRuleForm';
 import { AttendanceList } from './pages/AttendanceList';
 import { TimeOffList } from './pages/TimeOffList';
 import { AuditLog } from './pages/AuditLog';
+import { Profile } from './pages/Profile';
 import { ToastContainer } from './components/ToastContainer';
 import { getSession } from './lib/user';
 
@@ -28,6 +29,7 @@ function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const session = getSession();
 
@@ -55,9 +57,9 @@ function Layout() {
   return (
     <div className="min-h-screen bg-paper">
       <Topbar 
-        currentPath={currentPath} 
         onNavigate={handleNavigate} 
         user={session}
+        onToggleMobileNav={() => setMobileNavOpen(true)}
       />
       <MobileNav 
         currentPath={currentPath} 
@@ -69,8 +71,27 @@ function Layout() {
       
       <div className="pt-14 min-h-screen">
         <div className="flex">
-          <aside className="fixed top-24 bottom-6 left-4 z-40 w-60 transform transition-transform duration-200 lg:translate-x-0 hidden lg:block" aria-label="Sidebar navigation">
+          <aside 
+            className={`fixed top-24 bottom-6 left-4 z-40 transition-all duration-300 hidden lg:block ${
+              sidebarCollapsed ? 'w-16' : 'w-60'
+            }`} 
+            aria-label="Sidebar navigation"
+          >
             <div className="flex flex-col h-full bg-white/60 backdrop-blur-md rounded-3xl p-3 border border-black/[0.04] shadow-soft">
+              <div className={`flex items-center mb-2 pb-2 border-b border-black/[0.04] ${sidebarCollapsed ? 'justify-center' : 'justify-between px-1.5'}`}>
+                {!sidebarCollapsed && <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Menu</span>}
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:text-ink-900 hover:bg-cream transition-colors"
+                  title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                >
+                  <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
+
               <nav className="flex-1 space-y-1 overflow-y-auto" role="navigation" aria-label="Module navigation">
                 {sidebarItems.map(item => {
                   const isActive = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href));
@@ -79,7 +100,8 @@ function Layout() {
                       key={item.id}
                       href={item.href}
                       onClick={(e) => { e.preventDefault(); handleNavigate(item.href); }}
-                      className={`flex items-center gap-3 px-3.5 py-2 rounded-full text-xs font-medium transition-all ${
+                      title={sidebarCollapsed ? item.label : undefined}
+                      className={`flex items-center ${sidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-3.5'} py-2 rounded-full text-xs font-medium transition-all ${
                         isActive
                           ? 'bg-ink-900 text-white shadow-soft'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-cream'
@@ -87,7 +109,7 @@ function Layout() {
                       data-testid={`sidebar-nav-${item.id}`}
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={item.icon}/></svg>
-                      <span className="truncate">{item.label}</span>
+                      {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                     </a>
                   );
                 })}
@@ -95,11 +117,14 @@ function Layout() {
             </div>
           </aside>
           
-          <main className="flex-1 lg:ml-68 lg:pl-4 min-h-[calc(100vh-56px)]">
+          <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-24' : 'lg:ml-68'} lg:pl-4 min-h-[calc(100vh-56px)]`}>
             <div className="max-w-7xl mx-auto px-6 pt-20 pb-10">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 
+                {/* Profile */}
+                <Route path="/profile" element={<Profile />} />
+
                 {/* Employees */}
                 <Route path="/employees" element={<EmployeesList />} />
                 <Route path="/employees/new" element={<EmployeeForm mode="create" />} />
