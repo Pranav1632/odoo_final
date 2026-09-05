@@ -1,5 +1,5 @@
 -- Step 1: Create the database
--- CREATE DATABASE peoplepay360;
+CREATE DATABASE peoplepay360;
 
 -- Step 2: Create a dedicated user
 CREATE USER pp360_user WITH ENCRYPTED PASSWORD 'PeoplePay360@2026';
