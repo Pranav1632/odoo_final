@@ -1,0 +1,247 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - link "PeoplePay360 Home" [ref=f2e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f2e7]: P
+        - generic [ref=f2e8]: peoplepay360
+      - navigation "Main navigation" [ref=f2e9]:
+        - link "Dashboard" [ref=f2e10] [cursor=pointer]:
+          - /url: /
+        - link "Employees" [ref=f2e11] [cursor=pointer]:
+          - /url: /employees
+        - link "Contracts" [ref=f2e12] [cursor=pointer]:
+          - /url: /contracts
+        - link "Attendance" [ref=f2e13] [cursor=pointer]:
+          - /url: /attendance
+        - link "Time Off" [ref=f2e14] [cursor=pointer]:
+          - /url: /time-off
+        - link "Payroll" [ref=f2e15] [cursor=pointer]:
+          - /url: /payroll
+        - link "Reports" [ref=f2e16] [cursor=pointer]:
+          - /url: /reports
+      - button "Global search" [ref=f2e19]:
+        - generic [ref=f2e22]: Search…
+        - generic [ref=f2e23]: ⌘K
+      - generic [ref=f2e24]:
+        - button "Notifications" [ref=f2e26]:
+          - generic [ref=f2e29]: "3"
+        - button "User menu" [ref=f2e31]:
+          - generic [ref=f2e32]: ER
+  - generic [ref=f2e34]:
+    - complementary "Sidebar navigation" [ref=f2e35]:
+      - generic [ref=f2e36]:
+        - navigation "Module navigation" [ref=f2e37]:
+          - link "Dashboard" [ref=f2e38] [cursor=pointer]:
+            - /url: /
+          - link "Employees" [ref=f2e41] [cursor=pointer]:
+            - /url: /employees
+          - link "Contracts" [ref=f2e44] [cursor=pointer]:
+            - /url: /contracts
+          - link "Attendance" [ref=f2e47] [cursor=pointer]:
+            - /url: /attendance
+          - link "Time Off" [ref=f2e50] [cursor=pointer]:
+            - /url: /time-off
+          - link "Payroll" [ref=f2e53] [cursor=pointer]:
+            - /url: /payroll/payruns
+          - link "Reports" [ref=f2e56] [cursor=pointer]:
+            - /url: /reports
+        - generic [ref=f2e59]: Settings
+    - main [ref=f2e63]:
+      - generic [ref=f2e65]:
+        - navigation "Breadcrumb" [ref=f2e66]:
+          - list [ref=f2e67]:
+            - listitem [ref=f2e68]:
+              - link "Home" [ref=f2e69] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f2e70]:
+              - generic [ref=f2e73]: Dashboard
+        - generic [ref=f2e74]:
+          - generic [ref=f2e75]:
+            - heading "Payroll Dashboard" [level=1] [ref=f2e76]
+            - paragraph [ref=f2e77]: Overview of payroll metrics, costs, and operational alerts
+          - generic [ref=f2e79]:
+            - button "Reset" [ref=f2e80] [cursor=pointer]
+            - button "Apply Filters" [ref=f2e81] [cursor=pointer]
+        - search "Dashboard filters" [ref=f2e82]:
+          - generic [ref=f2e83]:
+            - generic [ref=f2e84]: Period
+            - combobox "Period" [ref=f2e85]:
+              - option "August 2025" [selected]
+              - option "July 2025"
+              - option "June 2025"
+              - option "May 2025"
+              - option "April 2025"
+              - option "March 2025"
+          - generic [ref=f2e86]:
+            - generic [ref=f2e87]: Department
+            - combobox "Department" [ref=f2e88]:
+              - option "All Departments" [selected]
+              - option "Engineering"
+              - option "Marketing"
+              - option "Human Resources"
+              - option "Operations"
+              - option "Finance"
+              - option "Sales"
+          - generic [ref=f2e89]:
+            - generic [ref=f2e90]: Employee Type
+            - combobox "Employee Type" [ref=f2e91]:
+              - option "All Types" [selected]
+              - option "Full-time"
+              - option "Part-time"
+              - option "Contract"
+        - region "Key performance indicators" [ref=f2e92]:
+          - generic [ref=f2e93]:
+            - paragraph [ref=f2e95]: Total Net Salary
+            - paragraph [ref=f2e99]: $142,500
+            - generic [ref=f2e100]:
+              - generic [ref=f2e101]: ↑ 3%
+              - generic [ref=f2e102]: vs last month
+          - generic [ref=f2e103]:
+            - paragraph [ref=f2e105]: Payslips Generated
+            - paragraph [ref=f2e109]: "47"
+            - generic [ref=f2e110]:
+              - generic [ref=f2e111]: ↑ 5%
+              - generic [ref=f2e112]: this period
+          - generic [ref=f2e113]:
+            - paragraph [ref=f2e115]: Average Salary
+            - paragraph [ref=f2e119]: $3,032
+            - generic [ref=f2e120]:
+              - generic [ref=f2e121]: ↑ 2%
+              - generic [ref=f2e122]: per employee
+          - generic [ref=f2e123]:
+            - paragraph [ref=f2e125]: Approved Time Off
+            - paragraph [ref=f2e129]: 23 days
+            - generic [ref=f2e130]:
+              - generic [ref=f2e131]: ↓ 8%
+              - generic [ref=f2e132]: this period
+          - generic [ref=f2e133]:
+            - paragraph [ref=f2e135]: Attendance Health
+            - paragraph [ref=f2e139]: 94.2%
+            - generic [ref=f2e140]:
+              - generic [ref=f2e141]: ↑ 3.2%
+              - generic [ref=f2e142]: from last month
+        - generic [ref=f2e143]:
+          - generic [ref=f2e144]:
+            - generic [ref=f2e146]:
+              - heading "Salary Cost by Department" [level=3] [ref=f2e147]
+              - generic [ref=f2e148]: Live
+            - img "Salary cost by department bar chart" [ref=f2e150]:
+              - generic [ref=f2e151]:
+                - 'button "Engineering: $52,000 (12 employees, 36.5%)" [ref=f2e152] [cursor=pointer]'
+                - generic [ref=f2e154]: Engineering
+                - generic [ref=f2e155]: $52,000
+              - generic [ref=f2e156]:
+                - 'button "Marketing: $28,000 (6 employees, 19.6%)" [ref=f2e157] [cursor=pointer]'
+                - generic [ref=f2e159]: Marketing
+                - generic [ref=f2e160]: $28,000
+              - generic [ref=f2e161]:
+                - 'button "Human Resources: $19,500 (4 employees, 13.7%)" [ref=f2e162] [cursor=pointer]'
+                - generic [ref=f2e164]: Human Resources
+                - generic [ref=f2e165]: $19,500
+              - generic [ref=f2e166]:
+                - 'button "Operations: $14,000 (3 employees, 9.8%)" [ref=f2e167] [cursor=pointer]'
+                - generic [ref=f2e169]: Operations
+                - generic [ref=f2e170]: $14,000
+              - generic [ref=f2e171]:
+                - 'button "Finance: $18,000 (4 employees, 12.6%)" [ref=f2e172] [cursor=pointer]'
+                - generic [ref=f2e174]: Finance
+                - generic [ref=f2e175]: $18,000
+              - generic [ref=f2e176]:
+                - 'button "Sales: $11,000 (2 employees, 7.8%)" [ref=f2e177] [cursor=pointer]'
+                - generic [ref=f2e179]: Sales
+                - generic [ref=f2e180]: $11,000
+          - generic [ref=f2e181]:
+            - heading "Monthly Net Salary Trend" [level=3] [ref=f2e183]
+            - img "Monthly net salary trend line chart" [ref=f2e185]:
+              - img [ref=f2e186]:
+                - 'generic "Mar: $125,000 (42 payslips)" [ref=f2e187]'
+                - 'generic "Apr: $132,000 (44 payslips)" [ref=f2e188]'
+                - 'generic "May: $128,000 (43 payslips)" [ref=f2e189]'
+                - 'generic "Jun: $138,000 (46 payslips)" [ref=f2e190]'
+                - 'generic "Jul: $142,500 (47 payslips)" [ref=f2e191]'
+                - 'generic "Aug: $148,000 (48 payslips)" [ref=f2e192]'
+              - generic [ref=f2e193]:
+                - generic [ref=f2e194]: Mar
+                - generic [ref=f2e195]: Apr
+                - generic [ref=f2e196]: May
+                - generic [ref=f2e197]: Jun
+                - generic [ref=f2e198]: Jul
+                - generic [ref=f2e199]: Aug
+        - generic [ref=f2e200]:
+          - generic [ref=f2e202]:
+            - heading "Operational Alerts" [level=3] [ref=f2e203]
+            - button "View All" [ref=f2e204] [cursor=pointer]
+          - generic [ref=f2e205]:
+            - generic [ref=f2e210]:
+              - paragraph [ref=f2e211]: 2 Payruns in Draft — not yet processed this period
+              - link "View Payruns" [ref=f2e212] [cursor=pointer]:
+                - /url: /payroll/payruns?status=Draft
+            - generic [ref=f2e219]:
+              - paragraph [ref=f2e220]: 5 Employees missing bank details
+              - link "View Employees" [ref=f2e221] [cursor=pointer]:
+                - /url: /employees?filter=missing-bank
+            - generic [ref=f2e228]:
+              - paragraph [ref=f2e229]: 1 Duplicate payslip detected (Bob Lee, Aug 2025)
+              - link "View Payslip" [ref=f2e230] [cursor=pointer]:
+                - /url: /payroll/payslips/ps-002
+            - generic [ref=f2e237]:
+              - paragraph [ref=f2e238]: 3 Contracts expiring within 30 days
+              - link "View Contracts" [ref=f2e239] [cursor=pointer]:
+                - /url: /contracts?filter=expiring
+        - generic [ref=f2e242]:
+          - generic [ref=f2e243]:
+            - heading "Attendance Overview — August 2025" [level=3] [ref=f2e245]
+            - generic [ref=f2e247]:
+              - img "Attendance overview chart" [ref=f2e248]:
+                - 'generic "Present: 892 (87%)" [ref=f2e249]':
+                  - generic [ref=f2e252]: Present
+                  - generic [ref=f2e253]: "892"
+                - 'generic "Late: 78 (7.6%)" [ref=f2e254]':
+                  - generic [ref=f2e257]: Late
+                  - generic [ref=f2e258]: "78"
+                - 'generic "Absent: 41 (4%)" [ref=f2e259]':
+                  - generic [ref=f2e262]: Absent
+                  - generic [ref=f2e263]: "41"
+                - 'generic "Overtime: 14 (1.4%)" [ref=f2e264]':
+                  - generic [ref=f2e267]: Overtime
+                  - generic [ref=f2e268]: "14"
+              - generic [ref=f2e269]:
+                - generic [ref=f2e270]:
+                  - paragraph [ref=f2e271]: "6"
+                  - paragraph [ref=f2e272]: Missing Check-Outs
+                  - button "Review →" [ref=f2e273] [cursor=pointer]
+                - generic [ref=f2e274]:
+                  - paragraph [ref=f2e275]: "12"
+                  - paragraph [ref=f2e276]: Manual Edits
+                  - button "Audit Log →" [ref=f2e277] [cursor=pointer]
+                - generic [ref=f2e278]:
+                  - paragraph [ref=f2e279]: 94.2%
+                  - paragraph [ref=f2e280]: Coverage
+          - generic [ref=f2e281]:
+            - heading "Time Off Overview — August 2025" [level=3] [ref=f2e283]
+            - generic [ref=f2e285]:
+              - generic [ref=f2e286]:
+                - generic [ref=f2e287]:
+                  - paragraph [ref=f2e288]: "89"
+                  - paragraph [ref=f2e289]: Approved Days Taken
+                - generic [ref=f2e290]:
+                  - paragraph [ref=f2e291]: "4"
+                  - paragraph [ref=f2e292]: Pending Requests
+                  - button "Review →" [ref=f2e293] [cursor=pointer]
+              - generic [ref=f2e294]:
+                - generic [ref=f2e295]:
+                  - generic [ref=f2e296]: An
+                  - generic [ref=f2e299]:
+                    - generic [ref=f2e300]: Annual Leave
+                    - generic [ref=f2e301]: 52 days
+                - generic [ref=f2e304]:
+                  - generic [ref=f2e305]: Si
+                  - generic [ref=f2e308]:
+                    - generic [ref=f2e309]: Sick Leave
+                    - generic [ref=f2e310]: 31 days
+                - generic [ref=f2e313]:
+                  - generic [ref=f2e314]: Pe
+                  - generic [ref=f2e317]:
+                    - generic [ref=f2e318]: Personal Leave
+                    - generic [ref=f2e319]: 6 days

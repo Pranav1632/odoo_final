@@ -1,0 +1,278 @@
+- generic [ref=f6e3]:
+  - banner [ref=f6e4]:
+    - generic [ref=f6e5]:
+      - link "PeoplePay360 Home" [ref=f6e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f6e7]: P
+      - generic [ref=f6e8]:
+        - button "Notifications" [ref=f6e10]:
+          - generic [ref=f6e13]: "3"
+        - button "User menu" [ref=f6e15]:
+          - generic [ref=f6e16]: ER
+  - generic [ref=f6e18]:
+    - complementary "Sidebar navigation" [ref=f6e19]:
+      - generic [ref=f6e20]:
+        - navigation "Module navigation" [ref=f6e21]:
+          - link "Dashboard" [ref=f6e22] [cursor=pointer]:
+            - /url: /
+          - link "Employees" [ref=f6e25] [cursor=pointer]:
+            - /url: /employees
+          - link "Contracts" [ref=f6e28] [cursor=pointer]:
+            - /url: /contracts
+          - link "Attendance" [ref=f6e31] [cursor=pointer]:
+            - /url: /attendance
+          - link "Time Off" [ref=f6e34] [cursor=pointer]:
+            - /url: /time-off
+          - link "Payroll" [ref=f6e37] [cursor=pointer]:
+            - /url: /payroll/payruns
+          - link "Reports" [ref=f6e40] [cursor=pointer]:
+            - /url: /reports
+        - generic [ref=f6e43]: Settings
+    - main [ref=f6e47]:
+      - generic [ref=f6e49]:
+        - navigation "Breadcrumb" [ref=f6e50]:
+          - list [ref=f6e51]:
+            - listitem [ref=f6e52]:
+              - link "Home" [ref=f6e53] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f6e54]:
+              - generic [ref=f6e57]: Employees
+        - generic [ref=f6e58]:
+          - generic [ref=f6e59]:
+            - heading "Employees" [level=1] [ref=f6e60]
+            - paragraph [ref=f6e61]: Showing 10 employees
+          - button "+ New Employee" [ref=f6e64] [cursor=pointer]
+        - generic [ref=f6e65]:
+          - textbox "Search by name, ID, email..." [ref=f6e67]
+          - combobox [ref=f6e69]:
+            - option "Department ▾" [selected]
+            - option "Engineering"
+            - option "Marketing"
+            - option "Human Resources"
+            - option "Operations"
+            - option "Finance"
+            - option "Sales"
+          - combobox [ref=f6e71]:
+            - option "All Statuses" [selected]
+            - option "Active"
+            - option "Inactive"
+            - option "On Leave"
+          - combobox [ref=f6e73]:
+            - option "Job Position ▾" [selected]
+            - option "Software Engineer"
+            - option "Senior Software Engineer"
+            - option "Lead Software Engineer"
+            - option "Product Manager"
+            - option "UI/UX Designer"
+            - option "Marketing Manager"
+            - option "Content Specialist"
+            - option "HR Manager"
+            - option "Recruiter"
+            - option "Operations Manager"
+            - option "Finance Manager"
+            - option "Accountant"
+            - option "Sales Representative"
+            - option "Account Executive"
+          - combobox [ref=f6e75]:
+            - option "Manager ▾" [selected]
+            - option "Emily Rodriguez"
+            - option "David Kim"
+            - option "Lisa Wang"
+            - option "Maria Garcia"
+            - option "Robert Taylor"
+            - option "Amanda Foster"
+          - button "Clear Filters" [ref=f6e76] [cursor=pointer]
+        - grid [ref=f6e80]:
+          - rowgroup [ref=f6e81]:
+            - row [ref=f6e82]:
+              - columnheader [ref=f6e83]:
+                - checkbox [ref=f6e84]
+              - columnheader [ref=f6e85]
+              - columnheader "Name" [ref=f6e86]
+              - columnheader "Department" [ref=f6e87]
+              - columnheader "Job Position" [ref=f6e88]
+              - columnheader "Manager" [ref=f6e89]
+              - columnheader "Schedule" [ref=f6e90]
+              - columnheader "Status" [ref=f6e91]
+              - columnheader "Actions" [ref=f6e92]
+          - rowgroup [ref=f6e93]:
+            - row [ref=f6e94] [cursor=pointer]:
+              - gridcell [ref=f6e95]:
+                - checkbox [ref=f6e96]
+              - gridcell "SC" [ref=f6e97]
+              - gridcell [ref=f6e99]:
+                - generic [ref=f6e100]:
+                  - paragraph [ref=f6e101]: Sarah Chen
+                  - paragraph [ref=f6e102]: EMP-000001
+              - gridcell "Engineering" [ref=f6e103]
+              - gridcell "Senior Software Engineer" [ref=f6e104]
+              - gridcell "Emily Rodriguez" [ref=f6e105]
+              - gridcell "Standard 40h" [ref=f6e106]
+              - gridcell "Active" [ref=f6e107]
+              - gridcell [ref=f6e109]:
+                - generic [ref=f6e110]:
+                  - button "View Sarah Chen" [ref=f6e111]
+                  - button "Edit Sarah Chen" [ref=f6e115]
+                  - button "More actions" [ref=f6e120]
+            - row [ref=f6e123] [cursor=pointer]:
+              - gridcell [ref=f6e124]:
+                - checkbox [ref=f6e125]
+              - gridcell "MJ" [ref=f6e126]
+              - gridcell [ref=f6e128]:
+                - generic [ref=f6e129]:
+                  - paragraph [ref=f6e130]: Marcus Johnson
+                  - paragraph [ref=f6e131]: EMP-000002
+              - gridcell "Engineering" [ref=f6e132]
+              - gridcell "Software Engineer" [ref=f6e133]
+              - gridcell "Sarah Chen" [ref=f6e134]
+              - gridcell "Standard 40h" [ref=f6e135]
+              - gridcell "Active" [ref=f6e136]
+              - gridcell [ref=f6e138]:
+                - generic [ref=f6e139]:
+                  - button "View Marcus Johnson" [ref=f6e140]
+                  - button "Edit Marcus Johnson" [ref=f6e144]
+                  - button "More actions" [ref=f6e149]
+            - row [ref=f6e152] [cursor=pointer]:
+              - gridcell [ref=f6e153]:
+                - checkbox [ref=f6e154]
+              - gridcell "ER" [ref=f6e155]
+              - gridcell [ref=f6e157]:
+                - generic [ref=f6e158]:
+                  - paragraph [ref=f6e159]: Emily Rodriguez
+                  - paragraph [ref=f6e160]: EMP-000003
+              - gridcell "Engineering" [ref=f6e161]
+              - gridcell "Lead Software Engineer" [ref=f6e162]
+              - gridcell "—" [ref=f6e163]
+              - gridcell "Standard 40h" [ref=f6e164]
+              - gridcell "Active" [ref=f6e165]
+              - gridcell [ref=f6e167]:
+                - generic [ref=f6e168]:
+                  - button "View Emily Rodriguez" [ref=f6e169]
+                  - button "Edit Emily Rodriguez" [ref=f6e173]
+                  - button "More actions" [ref=f6e178]
+            - row [ref=f6e181] [cursor=pointer]:
+              - gridcell [ref=f6e182]:
+                - checkbox [ref=f6e183]
+              - gridcell "DK" [ref=f6e184]
+              - gridcell [ref=f6e186]:
+                - generic [ref=f6e187]:
+                  - paragraph [ref=f6e188]: David Kim
+                  - paragraph [ref=f6e189]: EMP-000004
+              - gridcell "Marketing" [ref=f6e190]
+              - gridcell "Marketing Manager" [ref=f6e191]
+              - gridcell "—" [ref=f6e192]
+              - gridcell "Flexible 40h" [ref=f6e193]
+              - gridcell "Active" [ref=f6e194]
+              - gridcell [ref=f6e196]:
+                - generic [ref=f6e197]:
+                  - button "View David Kim" [ref=f6e198]
+                  - button "Edit David Kim" [ref=f6e202]
+                  - button "More actions" [ref=f6e207]
+            - row [ref=f6e210] [cursor=pointer]:
+              - gridcell [ref=f6e211]:
+                - checkbox [ref=f6e212]
+              - gridcell "LW" [ref=f6e213]
+              - gridcell [ref=f6e215]:
+                - generic [ref=f6e216]:
+                  - paragraph [ref=f6e217]: Lisa Wang
+                  - paragraph [ref=f6e218]: EMP-000005
+              - gridcell "Human Resources" [ref=f6e219]
+              - gridcell "HR Manager" [ref=f6e220]
+              - gridcell "—" [ref=f6e221]
+              - gridcell "Standard 40h" [ref=f6e222]
+              - gridcell "Active" [ref=f6e223]
+              - gridcell [ref=f6e225]:
+                - generic [ref=f6e226]:
+                  - button "View Lisa Wang" [ref=f6e227]
+                  - button "Edit Lisa Wang" [ref=f6e231]
+                  - button "More actions" [ref=f6e236]
+            - row [ref=f6e239] [cursor=pointer]:
+              - gridcell [ref=f6e240]:
+                - checkbox [ref=f6e241]
+              - gridcell "JW" [ref=f6e242]
+              - gridcell [ref=f6e244]:
+                - generic [ref=f6e245]:
+                  - paragraph [ref=f6e246]: James Wilson
+                  - paragraph [ref=f6e247]: EMP-000006
+              - gridcell "Finance" [ref=f6e248]
+              - gridcell "Accountant" [ref=f6e249]
+              - gridcell "Maria Garcia" [ref=f6e250]
+              - gridcell "Standard 40h" [ref=f6e251]
+              - gridcell "Active" [ref=f6e252]
+              - gridcell [ref=f6e254]:
+                - generic [ref=f6e255]:
+                  - button "View James Wilson" [ref=f6e256]
+                  - button "Edit James Wilson" [ref=f6e260]
+                  - button "More actions" [ref=f6e265]
+            - row [ref=f6e268] [cursor=pointer]:
+              - gridcell [ref=f6e269]:
+                - checkbox [ref=f6e270]
+              - gridcell "MG" [ref=f6e271]
+              - gridcell [ref=f6e273]:
+                - generic [ref=f6e274]:
+                  - paragraph [ref=f6e275]: Maria Garcia
+                  - paragraph [ref=f6e276]: EMP-000007
+              - gridcell "Finance" [ref=f6e277]
+              - gridcell "Finance Manager" [ref=f6e278]
+              - gridcell "—" [ref=f6e279]
+              - gridcell "Standard 40h" [ref=f6e280]
+              - gridcell "Active" [ref=f6e281]
+              - gridcell [ref=f6e283]:
+                - generic [ref=f6e284]:
+                  - button "View Maria Garcia" [ref=f6e285]
+                  - button "Edit Maria Garcia" [ref=f6e289]
+                  - button "More actions" [ref=f6e294]
+            - row [ref=f6e297] [cursor=pointer]:
+              - gridcell [ref=f6e298]:
+                - checkbox [ref=f6e299]
+              - gridcell "RT" [ref=f6e300]
+              - gridcell [ref=f6e302]:
+                - generic [ref=f6e303]:
+                  - paragraph [ref=f6e304]: Robert Taylor
+                  - paragraph [ref=f6e305]: EMP-000008
+              - gridcell "Sales" [ref=f6e306]
+              - gridcell "Account Executive" [ref=f6e307]
+              - gridcell "—" [ref=f6e308]
+              - gridcell "Flexible 40h" [ref=f6e309]
+              - gridcell "Active" [ref=f6e310]
+              - gridcell [ref=f6e312]:
+                - generic [ref=f6e313]:
+                  - button "View Robert Taylor" [ref=f6e314]
+                  - button "Edit Robert Taylor" [ref=f6e318]
+                  - button "More actions" [ref=f6e323]
+            - row [ref=f6e326] [cursor=pointer]:
+              - gridcell [ref=f6e327]:
+                - checkbox [ref=f6e328]
+              - gridcell "AF" [ref=f6e329]
+              - gridcell [ref=f6e331]:
+                - generic [ref=f6e332]:
+                  - paragraph [ref=f6e333]: Amanda Foster
+                  - paragraph [ref=f6e334]: EMP-000009
+              - gridcell "Operations" [ref=f6e335]
+              - gridcell "Operations Manager" [ref=f6e336]
+              - gridcell "—" [ref=f6e337]
+              - gridcell "Shift A" [ref=f6e338]
+              - gridcell "On Leave" [ref=f6e339]
+              - gridcell [ref=f6e341]:
+                - generic [ref=f6e342]:
+                  - button "View Amanda Foster" [ref=f6e343]
+                  - button "Edit Amanda Foster" [ref=f6e347]
+                  - button "More actions" [ref=f6e352]
+            - row [ref=f6e355] [cursor=pointer]:
+              - gridcell [ref=f6e356]:
+                - checkbox [ref=f6e357]
+              - gridcell "KP" [ref=f6e358]
+              - gridcell [ref=f6e360]:
+                - generic [ref=f6e361]:
+                  - paragraph [ref=f6e362]: Kevin Park
+                  - paragraph [ref=f6e363]: EMP-000010
+              - gridcell "Engineering" [ref=f6e364]
+              - gridcell "UI/UX Designer" [ref=f6e365]
+              - gridcell "Emily Rodriguez" [ref=f6e366]
+              - gridcell "Standard 40h" [ref=f6e367]
+              - gridcell "Active" [ref=f6e368]
+              - gridcell [ref=f6e370]:
+                - generic [ref=f6e371]:
+                  - button "View Kevin Park" [ref=f6e372]
+                  - button "Edit Kevin Park" [ref=f6e376]
+                  - button "More actions" [ref=f6e381]
