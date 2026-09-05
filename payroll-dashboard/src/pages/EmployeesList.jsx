@@ -1,15 +1,15 @@
-// src/pages/EmployeesList.jsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Card, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb, Dropdown, Modal 
 } from '../components/UI';
 import { 
-  employees, departments, jobPositions, schedules,
+  employees as mockEmployees, departments, jobPositions, schedules,
   getStatusColor
 } from '../data/mockData';
 import { getSession } from '../lib/user';
+import { employeesApi } from '../lib/api';
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses' },
@@ -31,9 +31,44 @@ export function EmployeesList() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  
+  const [employeeList, setEmployeeList] = useState(mockEmployees);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    employeesApi.getAll()
+      .then((data) => {
+        if (!isMounted) return;
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((emp) => ({
+            id: emp.id,
+            fullName: emp.name,
+            employeeId: emp.id,
+            workEmail: `${emp.name.toLowerCase().replace(/\s+/g, '.')}@company.com`,
+            departmentId: emp.department || 'eng',
+            jobPositionId: emp.jobPosition || 'dev',
+            scheduleId: emp.scheduleId || 'sch_1',
+            employmentStatus: emp.status === 'active' ? 'Active' : 'Inactive',
+            contractsCount: emp._count?.contracts ?? emp.contracts?.length ?? 0,
+            attendanceCount: emp._count?.attendances ?? 0,
+          }));
+          setEmployeeList(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend API unavailable, using mock data fallback', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Role check per Task 4 and security test:
-  // "New Employee" button visible to HR_MANAGER, HR_PAYROLL_MANAGER, ADMIN; hidden for EMPLOYEE and HR_PAYROLL_USER
   const canCreateEmployee = 
     !session || 
     session.role === 'HR_MANAGER' || 
@@ -41,16 +76,17 @@ export function EmployeesList() {
     session.role === 'ADMIN';
 
   const filteredEmployees = useMemo(() => {
-    return employees.filter(emp => {
+    return employeeList.filter(emp => {
       const matchesSearch = !search || 
         emp.fullName.toLowerCase().includes(search.toLowerCase()) ||
         emp.employeeId.toLowerCase().includes(search.toLowerCase()) ||
-        emp.workEmail.toLowerCase().includes(search.toLowerCase());
+        (emp.workEmail && emp.workEmail.toLowerCase().includes(search.toLowerCase()));
       const matchesDept = departmentFilter === 'all' || emp.departmentId === departmentFilter;
       const matchesStatus = statusFilter === 'all' || emp.employmentStatus === statusFilter;
       return matchesSearch && matchesDept && matchesStatus;
     });
-  }, [search, departmentFilter, statusFilter]);
+  }, [employeeList, search, departmentFilter, statusFilter]);
+
 
   const totalPages = Math.ceil(filteredEmployees.length / pageSize);
   const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * pageSize, currentPage * pageSize);
