@@ -4,11 +4,14 @@ import {
   Card, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb, Dropdown, Modal 
 } from '../components/UI';
-import { 
-  employees as mockEmployees, departments, jobPositions, schedules,
-  getStatusColor
-} from '../data/mockData';
+import { getStatusColor, departments } from '../data/mockData';
+import { getSession } from '../lib/user';
 import { employeesApi, authApi } from '../lib/api';
+
+
+
+
+
 
 
 const statusOptions = [
