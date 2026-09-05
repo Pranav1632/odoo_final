@@ -23,6 +23,11 @@ export function createApp() {
   );
   app.use(express.json());
 
+  // Health check endpoint
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', service: 'peoplepay360-server' });
+  });
+
   // Mount routes
   app.use('/api/auth', authRoutes);
   app.use('/api/employees', employeeRoutes);
