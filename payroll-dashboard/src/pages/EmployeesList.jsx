@@ -4,7 +4,7 @@ import {
   Card, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb, Dropdown, Modal 
 } from '../components/UI';
-import { getStatusColor, DEPARTMENTS as departments } from '../lib/formatters';
+import { getStatusColor, DEPARTMENTS as departments, JOB_POSITIONS as jobPositions } from '../lib/formatters';
 import { getSession } from '../lib/user';
 import { employeesApi, authApi } from '../lib/api';
 
