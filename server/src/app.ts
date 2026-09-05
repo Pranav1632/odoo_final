@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { errorHandler } from './middleware/errorHandler';
+
+// Person A's routes
 import authRoutes from './routes/auth';
 import employeeRoutes from './routes/employees';
 import contractRoutes from './routes/contracts';
@@ -11,6 +13,16 @@ import timeoffRoutes from './routes/timeoff';
 import auditLogRoutes from './routes/auditLog';
 import errorLogRoutes from './routes/errorLog';
 
+// Person B's routes
+import salaryStructureRoutes from './routes/salaryStructures';
+import salaryRuleRoutes from './routes/salaryRules';
+import payrunRoutes from './routes/payruns';
+import payslipRoutes from './routes/payslips';
+
+/**
+ * Creates and configures the Express app without calling listen().
+ * Exported for use in supertest-based integration tests.
+ */
 export function createApp() {
   const app = express();
 
@@ -28,7 +40,7 @@ export function createApp() {
     res.json({ status: 'ok', service: 'peoplepay360-server' });
   });
 
-  // Mount routes
+  // Person A routes
   app.use('/api/auth', authRoutes);
   app.use('/api/employees', employeeRoutes);
   app.use('/api/contracts', contractRoutes);
@@ -38,6 +50,12 @@ export function createApp() {
   app.use('/api/audit-log', auditLogRoutes);
   app.use('/api/error-log', errorLogRoutes);
 
+  // Person B routes
+  app.use('/api/salary-structures', salaryStructureRoutes);
+  app.use('/api/salary-rules', salaryRuleRoutes);
+  app.use('/api/payruns', payrunRoutes);
+  app.use('/api/payslips', payslipRoutes);
+
   // Must be LAST — after all routes
   app.use(errorHandler);
 
@@ -46,3 +64,4 @@ export function createApp() {
 
 const app = createApp();
 export default app;
+
