@@ -17,7 +17,13 @@ export type AuditAction =
   | 'SEND_PAYSLIPS'
   | 'CREATE_PAYRUN'
   | 'UPDATE_SALARY_RULE'
-  | 'CREATE_SALARY_RULE';
+  | 'CREATE_SALARY_RULE'
+  | 'DELETE_SALARY_RULE'
+  | 'CREATE_SALARY_STRUCTURE'
+  | 'UPDATE_SALARY_STRUCTURE'
+  | 'DELETE_SALARY_STRUCTURE'
+  | 'ATTACH_EMPLOYEES';
+
 
 export async function writeAuditLog(params: {
   userId: string;
