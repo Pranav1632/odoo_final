@@ -1,0 +1,219 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  HR_MANAGER
+  HR_PAYROLL_USER
+  HR_PAYROLL_MANAGER
+  ADMIN
+}
+
+model User {
+  id       String    @id @default(cuid())
+  email    String    @unique
+  password String
+  role     Role
+  employee Employee?
+}
+
+model Employee {
+  id                String          @id @default(cuid())
+  name              String
+  department        String
+  managerId         String?
+  jobPosition       String
+  scheduleId        String?
+  schedule          WorkingSchedule? @relation(fields: [scheduleId], references: [id])
+  status            String          @default("active")
+  bankAccountNumber String?
+  userId            String?         @unique
+  user              User?           @relation(fields: [userId], references: [id])
+  contracts         Contract[]
+  attendances       Attendance[]
+  timeOffRequests   TimeOffRequest[]
+  allocations       Allocation[]
+  payslips          Payslip[]
+}
+
+model Contract {
+  id                String          @id @default(cuid())
+  employeeId        String
+  employee          Employee        @relation(fields: [employeeId], references: [id])
+  startDate         DateTime
+  endDate           DateTime?
+  wage              Float
+  department        String
+  position          String
+  salaryStructureId String
+  salaryStructure   SalaryStructure @relation(fields: [salaryStructureId], references: [id])
+  status            String          @default("active") // active | expired | draft
+
+  @@index([employeeId, startDate, endDate])
+}
+
+model WorkingSchedule {
+  id        String         @id @default(cuid())
+  name      String
+  type      String
+  lines     ScheduleLine[]
+  employees Employee[]
+}
+
+model ScheduleLine {
+  id         String          @id @default(cuid())
+  scheduleId String
+  schedule   WorkingSchedule @relation(fields: [scheduleId], references: [id])
+  day        String
+  startTime  String
+  endTime    String
+  breakMins  Int             @default(0)
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  checkIn     DateTime
+  checkOut    DateTime?
+  workedHours Float?
+  status      String   @default("normal") // normal | exception | corrected
+
+  @@index([employeeId, checkIn])
+}
+
+model TimeOffType {
+  id                 String           @id @default(cuid())
+  name               String
+  unit               String           // days | hours
+  requiresAllocation Boolean          @default(true)
+  payrollIntegrated  Boolean          @default(false)
+  allocations        Allocation[]
+  requests           TimeOffRequest[]
+}
+
+model Allocation {
+  id         String      @id @default(cuid())
+  employeeId String
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+  typeId     String
+  type       TimeOffType @relation(fields: [typeId], references: [id])
+  allocated  Float
+  taken      Float       @default(0)
+  validFrom  DateTime
+  validTo    DateTime
+  approved   Boolean     @default(false)
+
+  @@index([employeeId, typeId])
+}
+
+model TimeOffRequest {
+  id         String      @id @default(cuid())
+  employeeId String
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+  typeId     String
+  type       TimeOffType @relation(fields: [typeId], references: [id])
+  startDate  DateTime
+  endDate    DateTime
+  duration   Float
+  status     String      @default("pending") // pending | approved | refused
+
+  @@index([employeeId, status])
+}
+
+model SalaryStructure {
+  id        String       @id @default(cuid())
+  name      String
+  rules     SalaryRule[]
+  contracts Contract[]
+  payruns   Payrun[]
+}
+
+model SalaryRule {
+  id                String          @id @default(cuid())
+  structureId       String
+  structure         SalaryStructure @relation(fields: [structureId], references: [id])
+  name              String
+  code              String          // BASIC, HRA, GROSS, NET, etc.
+  category          String          // Basic | Allowance | Gross | Deduction | Net
+  sequence          Int
+  computationMethod String          // fixed | percentage | formula
+  amount            Float?
+  percentageOf      String?
+  percentageValue   Float?
+  formula           String?         // mathjs expression
+}
+
+model Payrun {
+  id                String          @id @default(cuid())
+  name              String
+  periodStart       DateTime
+  periodEnd         DateTime
+  salaryStructureId String
+  salaryStructure   SalaryStructure @relation(fields: [salaryStructureId], references: [id])
+  status            String          @default("draft") // draft | computed | validated | paid
+  payslips          Payslip[]
+}
+
+model Payslip {
+  id         String        @id @default(cuid())
+  payrunId   String
+  payrun     Payrun        @relation(fields: [payrunId], references: [id])
+  employeeId String
+  employee   Employee      @relation(fields: [employeeId], references: [id])
+  contractId String
+  workedDays Float
+  status     String        @default("draft") // draft | computed | validated | paid
+  lines      PayslipLine[]
+  warnings   String[]
+  netSalary  Float?
+
+  @@index([payrunId])
+  @@index([employeeId])
+}
+
+model PayslipLine {
+  id        String  @id @default(cuid())
+  payslipId String
+  payslip   Payslip @relation(fields: [payslipId], references: [id])
+  code      String
+  name      String
+  category  String
+  amount    Float
+
+  @@index([payslipId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  details    String?  // JSON string
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model ErrorLog {
+  id        String   @id @default(cuid())
+  route     String
+  userId    String?
+  message   String
+  stack     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
