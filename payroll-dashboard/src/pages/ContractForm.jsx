@@ -18,7 +18,7 @@ export function ContractForm() {
   const [employeeId, setEmployeeId] = useState(existing?.employeeId || 'emp-001');
   const [startDate, setStartDate] = useState(existing?.startDate || '2025-01-01');
   const [endDate, setEndDate] = useState(existing?.endDate || '');
-  const [wageAmount, setWageAmount] = useState(existing?.wageAmount?.toString() || '120000');
+  const [wage, setWage] = useState(existing?.wage?.toString() || existing?.wageAmount?.toString() || '120000');
   const [departmentId, setDepartmentId] = useState(existing?.departmentId || 'eng');
   const [jobPositionId, setJobPositionId] = useState(existing?.jobPositionId || 'senior-se');
   const [salaryStructureId, setSalaryStructureId] = useState(existing?.salaryStructureId || 'struct-001');
@@ -125,10 +125,10 @@ export function ContractForm() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
-              label="Wage Amount (₹ / Month) *"
+              label="Wage (₹ / Month) *"
               type="number"
-              value={wageAmount}
-              onChange={(e) => setWageAmount(e.target.value)}
+              value={wage}
+              onChange={(e) => setWage(e.target.value)}
               placeholder="120000"
               required
             />

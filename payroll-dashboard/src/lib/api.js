@@ -138,6 +138,10 @@ export const payslipsApi = {
   exportExcel: (payrunId) => apiRequest(`/payslips/export-excel?payrunId=${payrunId}`),
 };
 
+export const dashboardApi = {
+  getMetrics: (params = '') => apiRequest(`/dashboard${params ? `?${params}` : ''}`),
+};
+
 export default {
   auth: authApi,
   employees: employeesApi,
@@ -150,4 +154,5 @@ export default {
   salaryRules: salaryRulesApi,
   payruns: payrunsApi,
   payslips: payslipsApi,
+  dashboard: dashboardApi,
 };
