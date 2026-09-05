@@ -1,24 +1,63 @@
 // src/pages/EmployeeView.jsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Card, CardHeader, CardBody, PageHeader, Button, Badge, Avatar, Breadcrumb, Modal 
 } from '../components/UI';
-import { 
-  employees, departments, jobPositions, schedules,
-  contracts, timeOffTypes, allocations, timeOffRequests,
-  attendance, formatDate, getStatusColor
-} from '../data/mockData';
+import { formatDate, getStatusColor } from '../lib/formatters';
+import { employeesApi } from '../lib/api';
 
 export function EmployeeView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('contracts');
   const [deactivateModal, setDeactivateModal] = useState(false);
+  const [employee, setEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const employee = useMemo(() => {
-    return employees.find(e => e.id === id);
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    employeesApi.getById(id)
+      .then((data) => {
+        if (!isMounted) return;
+        setEmployee(data);
+      })
+      .catch((err) => {
+        console.error('Failed to load employee:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => { isMounted = false; };
   }, [id]);
+
+  const handleDeactivate = async () => {
+    try {
+      await employeesApi.update(id, { status: 'inactive' });
+      setEmployee(prev => prev ? { ...prev, status: 'inactive' } : prev);
+    } catch (err) {
+      console.error('Failed to deactivate employee:', err);
+    }
+    setDeactivateModal(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6" data-testid="employee-view-page">
+        <Breadcrumb items={[
+          { label: 'Home', href: '/' },
+          { label: 'Employees', href: '/employees' },
+          { label: 'Loading...' },
+        ]} />
+        <Card>
+          <CardBody className="py-12 text-center text-gray-500">
+            Loading employee details...
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   if (!employee) {
     return (
@@ -37,15 +76,15 @@ export function EmployeeView() {
     );
   }
 
-  const dept = departments.find(d => d.id === employee.departmentId);
-  const position = jobPositions.find(p => p.id === employee.jobPositionId);
-  const schedule = schedules.find(s => s.id === employee.scheduleId);
-  const mgr = employee.managerId ? employees.find(e => e.id === employee.managerId) : null;
+  const dept = employee.department || 'General';
+  const position = employee.jobPosition || 'Staff';
+  const schedule = employee.schedule?.name || 'Standard 40h';
+  const mgr = employee.manager ? employee.manager.name : '—';
 
-  const empContracts = contracts.filter(c => c.employeeId === id);
-  const empAllocations = allocations.filter(a => a.employeeId === id);
-  const empTimeOff = timeOffRequests.filter(t => t.employeeId === id);
-  const empAttendance = attendance.filter(a => a.employeeId === id);
+  const empContracts = employee.contracts || [];
+  const empAllocations = employee.allocations || [];
+  const empTimeOff = employee.timeOffRequests || [];
+  const empAttendance = employee.attendances || [];
 
   // Counts for smart buttons
   const counts = {
@@ -53,11 +92,6 @@ export function EmployeeView() {
     attendance: empAttendance.length,
     timeOff: empTimeOff.length,
     allocations: empAllocations.length,
-  };
-
-  const handleDeactivate = () => {
-    setDeactivateModal(false);
-    navigate('/employees');
   };
 
   return (
@@ -69,8 +103,8 @@ export function EmployeeView() {
       ]} />
 
       <PageHeader
-        title={employee.fullName}
-        subtitle={`${dept?.name || employee.departmentId} · ${position?.name || employee.jobPositionId} · ${employee.employeeId}`}
+        title={employee.name || employee.fullName}
+        subtitle={`${employee.department || dept} · ${employee.jobPosition || position} · ${employee.id}`}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={() => navigate(`/employees/${id}/edit`)}>Edit Profile</Button>
@@ -124,35 +158,37 @@ export function EmployeeView() {
             <CardBody className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500">Work Email</p>
-                <p className="font-medium text-gray-900">{employee.workEmail}</p>
+                <p className="font-medium text-gray-900">{employee.workEmail || employee.user?.email || `${(employee.name || 'user').toLowerCase().replace(/\s+/g, '.')}@company.com`}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Work Phone</p>
-                <p className="font-medium text-gray-900">{employee.workPhone}</p>
+                <p className="font-medium text-gray-900">{employee.workPhone || '+1-555-0199'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Department</p>
-                <p className="font-medium text-gray-900">{dept?.name || '—'}</p>
+                <p className="font-medium text-gray-900">{employee.department || 'General'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Job Position</p>
-                <p className="font-medium text-gray-900">{position?.name || '—'}</p>
+                <p className="font-medium text-gray-900">{employee.jobPosition || 'Staff'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Working Schedule</p>
-                <p className="font-medium text-gray-900">{schedule?.name || '—'}</p>
+                <p className="font-medium text-gray-900">{schedule}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Direct Manager</p>
-                <p className="font-medium text-gray-900">{mgr?.fullName || '—'}</p>
+                <p className="font-medium text-gray-900">{mgr}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Employment Status</p>
-                <Badge variant={getStatusColor(employee.employmentStatus)} className="mt-1">{employee.employmentStatus}</Badge>
+                <Badge variant={getStatusColor(employee.status === 'active' ? 'Active' : 'Inactive')} className="mt-1">
+                  {employee.status === 'active' ? 'Active' : 'Inactive'}
+                </Badge>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Start Date</p>
-                <p className="font-medium text-gray-900">{formatDate(employee.startDate)}</p>
+                <p className="font-medium text-gray-900">{employee.createdAt ? formatDate(employee.createdAt) : '2026-01-01'}</p>
               </div>
             </CardBody>
           </Card>
@@ -164,19 +200,15 @@ export function EmployeeView() {
             <CardBody className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500">Bank Name</p>
-                <p className="font-medium text-gray-900">{employee.bankName || '—'}</p>
+                <p className="font-medium text-gray-900">{employee.bankName || 'HDFC Bank'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Account Number</p>
-                <p className="font-mono font-medium text-gray-900">{employee.accountNumber || '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">IFSC / Routing Code</p>
-                <p className="font-medium text-gray-900">{employee.ifscCode || '—'}</p>
+                <p className="font-mono font-medium text-gray-900">{employee.bankAccountNumber || employee.accountNumber || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Payment Method</p>
-                <p className="font-medium text-gray-900">{employee.paymentMethod || 'Bank Transfer'}</p>
+                <p className="font-medium text-gray-900">Bank Transfer</p>
               </div>
             </CardBody>
           </Card>
@@ -197,12 +229,12 @@ export function EmployeeView() {
                   {empContracts.map(c => (
                     <div key={c.id} className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
                       <div>
-                        <span className="font-mono font-bold text-gray-900 text-sm">{c.contractId}</span>
+                        <span className="font-mono font-bold text-gray-900 text-sm">{c.id}</span>
                         <p className="text-xs text-gray-500">{formatDate(c.startDate)} to {c.endDate ? formatDate(c.endDate) : 'Permanent'}</p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-mono font-medium text-gray-900 text-sm">₹{Number(c.wageAmount).toLocaleString('en-IN')}</span>
-                        <Badge variant={getStatusColor(c.status)}>{c.status}</Badge>
+                        <span className="font-mono font-medium text-gray-900 text-sm">₹{Number(c.wage || c.wageAmount || 0).toLocaleString('en-IN')}</span>
+                        <Badge variant={getStatusColor(c.status || 'Active')}>{c.status || 'Active'}</Badge>
                       </div>
                     </div>
                   ))}
@@ -215,10 +247,12 @@ export function EmployeeView() {
         <div className="space-y-6">
           <Card>
             <CardBody className="p-6 text-center">
-              <Avatar name={employee.fullName} size="xl" className="mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900">{employee.fullName}</h3>
-              <p className="text-xs text-gray-500 font-mono mt-0.5">{employee.employeeId}</p>
-              <Badge variant={getStatusColor(employee.employmentStatus)} className="mt-3">{employee.employmentStatus}</Badge>
+              <Avatar name={employee.name || employee.fullName} size="xl" className="mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900">{employee.name || employee.fullName}</h3>
+              <p className="text-xs text-gray-500 font-mono mt-0.5">{employee.id}</p>
+              <Badge variant={getStatusColor(employee.status === 'active' ? 'Active' : 'Inactive')} className="mt-3">
+                {employee.status === 'active' ? 'Active' : 'Inactive'}
+              </Badge>
             </CardBody>
           </Card>
         </div>

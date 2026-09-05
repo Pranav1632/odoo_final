@@ -1,7 +1,8 @@
 // src/App.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Topbar, MobileNav } from './components/Topbar';
+import { AuthPage } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { EmployeesList } from './pages/EmployeesList';
 import { EmployeeForm } from './pages/EmployeeForm';
@@ -23,15 +24,31 @@ import { TimeOffList } from './pages/TimeOffList';
 import { AuditLog } from './pages/AuditLog';
 import { Profile } from './pages/Profile';
 import { ToastContainer } from './components/ToastContainer';
-import { getSession } from './lib/user';
+import { getSession, logout } from './lib/user';
 
-function Layout() {
+function ProtectedRoute({ session, allowedRoles, children }) {
+  if (!session) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes('ALL') && !allowedRoles.includes(session.role)) {
+    return (
+      <div className="text-center py-16 space-y-4">
+        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl font-bold">
+          ✕
+        </div>
+        <h2 className="text-xl font-bold text-ink-900">Access Restricted</h2>
+        <p className="text-sm text-gray-500 max-w-sm mx-auto">
+          Your current role (<span className="font-semibold">{session.role}</span>) does not have permission to access this module.
+        </p>
+      </div>
+    );
+  }
+  return children;
+}
+
+function Layout({ session, onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
-  const session = getSession();
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -39,19 +56,20 @@ function Layout() {
   };
 
   const currentPath = location.pathname;
+  const userRole = session?.role || 'EMPLOYEE';
 
-  const userRole = session?.role || 'HR_PAYROLL_MANAGER';
+  // Strict Master Spec RBAC module sidebar links
   const sidebarItems = [
-    { id: 'dashboard', label: 'Dashboard', href: '/', roles: ['ALL'], icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+    { id: 'dashboard', label: 'Dashboard', href: '/', roles: ['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
     { id: 'employees', label: 'Employees', href: '/employees', roles: ['ALL'], icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-    { id: 'contracts', label: 'Contracts', href: '/contracts', roles: ['ALL'], icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { id: 'contracts', label: 'Contracts', href: '/contracts', roles: ['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
     { id: 'schedules', label: 'Schedules', href: '/schedules', roles: ['ALL'], icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'attendance', label: 'Attendance', href: '/attendance', roles: ['ALL'], icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
     { id: 'timeoff', label: 'Time Off', href: '/time-off', roles: ['ALL'], icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
     { id: 'payroll', label: 'Payroll', href: '/payroll/payruns', roles: ['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'payslips', label: 'Payslips', href: '/payslips', roles: ['ALL'], icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
-    { id: 'structures', label: 'Salary Structures', href: '/salary-structures', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zm0 5h16' },
-    { id: 'audit', label: 'Audit Log', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { id: 'structures', label: 'Salary Structures', href: '/salary-structures', roles: ['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zm0 5h16' },
+    { id: 'audit', label: 'System Logs', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'], icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
   ].filter(item => item.roles.includes('ALL') || item.roles.includes(userRole));
 
   return (
@@ -60,6 +78,7 @@ function Layout() {
         onNavigate={handleNavigate} 
         user={session}
         onToggleMobileNav={() => setMobileNavOpen(true)}
+        onLogout={onLogout}
       />
       <MobileNav 
         currentPath={currentPath} 
@@ -67,6 +86,7 @@ function Layout() {
         isOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
         user={session}
+        onLogout={onLogout}
       />
       
       <div className="pt-14 min-h-screen">
@@ -120,64 +140,189 @@ function Layout() {
           <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-24' : 'lg:ml-68'} lg:pl-4 min-h-[calc(100vh-56px)]`}>
             <div className="max-w-7xl mx-auto px-6 pt-20 pb-10">
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN', 'EMPLOYEE']}>
+                    {userRole === 'EMPLOYEE' ? <Profile /> : <Dashboard />}
+                  </ProtectedRoute>
+                } />
                 
                 {/* Profile */}
-                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
 
                 {/* Employees */}
-                <Route path="/employees" element={<EmployeesList />} />
-                <Route path="/employees/new" element={<EmployeeForm mode="create" />} />
-                <Route path="/employees/:id/edit" element={<EmployeeForm mode="edit" />} />
-                <Route path="/employees/:id" element={<EmployeeView />} />
+                <Route path="/employees" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <EmployeesList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/employees/new" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <EmployeeForm mode="create" />
+                  </ProtectedRoute>
+                } />
+                <Route path="/employees/:id/edit" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <EmployeeForm mode="edit" />
+                  </ProtectedRoute>
+                } />
+                <Route path="/employees/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <EmployeeView />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Contracts */}
-                <Route path="/contracts" element={<ContractsList />} />
-                <Route path="/contracts/new" element={<ContractForm />} />
-                <Route path="/contracts/:id" element={<ContractForm />} />
+                <Route path="/contracts" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <ContractsList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/contracts/new" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <ContractForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="/contracts/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <ContractForm />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Working Schedules */}
-                <Route path="/schedules" element={<SchedulesList />} />
-                <Route path="/schedules/new" element={<ScheduleForm />} />
-                <Route path="/schedules/:id" element={<ScheduleForm />} />
+                <Route path="/schedules" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <SchedulesList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/schedules/new" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <ScheduleForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="/schedules/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <ScheduleForm />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Attendance */}
-                <Route path="/attendance" element={<AttendanceList />} />
-                <Route path="/attendance/new" element={<AttendanceList />} />
-                <Route path="/attendance/:id" element={<AttendanceList />} />
+                <Route path="/attendance" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <AttendanceList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/attendance/new" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <AttendanceList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/attendance/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <AttendanceList />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Time Off */}
-                <Route path="/time-off" element={<TimeOffList />} />
-                <Route path="/timeoff/requests" element={<TimeOffList />} />
-                <Route path="/timeoff/allocations" element={<TimeOffList />} />
-                <Route path="/timeoff/types" element={<TimeOffList />} />
+                <Route path="/time-off" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <TimeOffList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/timeoff/requests" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <TimeOffList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/timeoff/allocations" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <TimeOffList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/timeoff/types" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <TimeOffList />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Payroll & Payruns */}
                 <Route path="/payroll" element={<Navigate to="/payroll/payruns" replace />} />
-                <Route path="/payroll/payruns" element={<PayrunsList />} />
-                <Route path="/payroll/payruns/new" element={<PayrunWizard />} />
-                <Route path="/payroll/payruns/:id" element={<PayrunDetail />} />
-                <Route path="/payroll/new" element={<PayrunWizard />} />
-                <Route path="/payroll/:id" element={<PayrunDetail />} />
+                <Route path="/payroll/payruns" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <PayrunsList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payroll/payruns/new" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <PayrunWizard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payroll/payruns/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <PayrunDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payroll/new" element={<Navigate to="/payroll/payruns/new" replace />} />
+                <Route path="/payroll/:id" element={<Navigate to="/payroll/payruns" replace />} />
                 
                 {/* Payslips */}
-                <Route path="/payslips" element={<PayslipsList />} />
-                <Route path="/payslips/:id" element={<PayslipDetail />} />
-                <Route path="/payroll/payslips/:id" element={<PayslipDetail />} />
+                <Route path="/payslips" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <PayslipsList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payslips/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <PayslipDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payroll/payslips/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['ALL']}>
+                    <PayslipDetail />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Salary Structures & Rules */}
-                <Route path="/salary-structures" element={<SalaryStructuresList />} />
-                <Route path="/salary-structures/new" element={<SalaryStructureForm />} />
-                <Route path="/salary-structures/:id" element={<SalaryStructureForm />} />
-                <Route path="/salary-rules" element={<SalaryStructuresList />} />
-                <Route path="/salary-rules/new" element={<SalaryRuleForm />} />
-                <Route path="/salary-rules/:id" element={<SalaryRuleForm />} />
+                <Route path="/salary-structures" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <SalaryStructuresList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/salary-structures/new" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <SalaryStructureForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="/salary-structures/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <SalaryStructureForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="/salary-rules" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <SalaryStructuresList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/salary-rules/new" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <SalaryRuleForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="/salary-rules/:id" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <SalaryRuleForm />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Audit Log */}
-                <Route path="/audit-log" element={<AuditLog />} />
-                
-                {/* Reports — alias to Dashboard */}
-                <Route path="/reports" element={<Dashboard />} />
+                <Route path="/audit-log" element={
+                  <ProtectedRoute session={session} allowedRoles={['HR_PAYROLL_MANAGER', 'ADMIN']}>
+                    <AuditLog />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
@@ -193,11 +338,32 @@ function Layout() {
 }
 
 export default function App() {
+  const [session, setSessionState] = useState(() => getSession());
+
+  const handleLoginSuccess = (newSession) => {
+    setSessionState(newSession);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setSessionState(null);
+  };
+
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/*" element={<Layout />} />
-      </Routes>
+      {!session ? (
+        <Routes>
+          <Route path="/login" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="/register" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      ) : (
+        <Routes>
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/register" element={<Navigate to="/" replace />} />
+          <Route path="/*" element={<Layout session={session} onLogout={handleLogout} />} />
+        </Routes>
+      )}
     </BrowserRouter>
   );
-}
+}

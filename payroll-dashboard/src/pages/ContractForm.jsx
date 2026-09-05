@@ -1,67 +1,168 @@
 // src/pages/ContractForm.jsx
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Card, CardHeader, CardBody, PageHeader, Button, Input, Select, Breadcrumb 
 } from '../components/UI';
-import { contracts, employees, departments, jobPositions, salaryStructures } from '../data/mockData';
+import { contractsApi, employeesApi, salaryStructuresApi } from '../lib/api';
+
+const DEPARTMENTS = [
+  'Engineering',
+  'Marketing',
+  'Human Resources',
+  'Operations',
+  'Finance',
+  'Sales',
+];
+
+const POSITIONS = [
+  'Software Engineer',
+  'Senior Software Engineer',
+  'Lead Software Engineer',
+  'Product Manager',
+  'UI/UX Designer',
+  'Marketing Manager',
+  'Content Specialist',
+  'HR Manager',
+  'Recruiter',
+  'Operations Manager',
+  'Finance Manager',
+  'Accountant',
+  'Sales Representative',
+  'Account Executive',
+];
 
 export function ContractForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id && id !== 'new');
 
-  const existing = useMemo(() => {
-    return isEdit ? contracts.find(c => c.id === id || c.contractId === id) : null;
-  }, [id, isEdit]);
-
-  const [employeeId, setEmployeeId] = useState(existing?.employeeId || 'emp-001');
-  const [startDate, setStartDate] = useState(existing?.startDate || '2025-01-01');
-  const [endDate, setEndDate] = useState(existing?.endDate || '');
-  const [wageAmount, setWageAmount] = useState(existing?.wageAmount?.toString() || '120000');
-  const [departmentId, setDepartmentId] = useState(existing?.departmentId || 'eng');
-  const [jobPositionId, setJobPositionId] = useState(existing?.jobPositionId || 'senior-se');
-  const [salaryStructureId, setSalaryStructureId] = useState(existing?.salaryStructureId || 'struct-001');
-  const [status, setStatus] = useState(existing?.status || 'Active');
-  const [notes, setNotes] = useState(existing?.notes || '');
+  const [employeeList, setEmployeeList] = useState([]);
+  const [structureList, setStructureList] = useState([]);
+  const [employeeId, setEmployeeId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [wage, setWage] = useState('120000');
+  const [department, setDepartment] = useState('Engineering');
+  const [position, setPosition] = useState('Software Engineer');
+  const [salaryStructureId, setSalaryStructureId] = useState('');
+  const [status, setStatus] = useState('active');
+  const [contractCode, setContractCode] = useState('');
   const [error409, setError409] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  const handleSave = (e) => {
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      employeesApi.getAll().catch(() => []),
+      salaryStructuresApi.getAll().catch(() => []),
+      isEdit ? contractsApi.getById(id).catch(() => null) : Promise.resolve(null),
+    ]).then(([employees, structures, contract]) => {
+      if (!isMounted) return;
+
+      const empArr = Array.isArray(employees) ? employees : [];
+      setEmployeeList(empArr);
+
+      const structArr = Array.isArray(structures) ? structures : [];
+      setStructureList(structArr);
+
+      if (contract) {
+        setEmployeeId(contract.employeeId || '');
+        setStartDate(contract.startDate ? contract.startDate.split('T')[0] : '');
+        setEndDate(contract.endDate ? contract.endDate.split('T')[0] : '');
+        setWage(contract.wage ? contract.wage.toString() : '120000');
+        setDepartment(contract.department || 'Engineering');
+        setPosition(contract.position || 'Software Engineer');
+        setSalaryStructureId(contract.salaryStructureId || (structArr[0]?.id || ''));
+        setStatus(contract.status ? contract.status.toLowerCase() : 'active');
+        setContractCode(contract.id);
+      } else {
+        if (empArr.length > 0) setEmployeeId(empArr[0].id);
+        if (structArr.length > 0) setSalaryStructureId(structArr[0].id);
+        setStartDate(new Date().toISOString().split('T')[0]);
+      }
+    }).finally(() => {
+      if (isMounted) setInitialLoading(false);
+    });
+
+    return () => { isMounted = false; };
+  }, [id, isEdit]);
+
+  const handleSave = async (e) => {
     e.preventDefault();
     setError409('');
 
-    // Check 409 conflict: overlapping active contract for same employee
-    if (status === 'Active') {
-      const activeOverlap = contracts.find(c => 
-        c.employeeId === employeeId && 
-        c.status === 'Active' && 
-        c.id !== id && 
-        c.contractId !== id
-      );
-      if (activeOverlap && !isEdit) {
-        setError409(`Conflict (409): Employee already has an active contract (${activeOverlap.contractId}). Please expire or modify the existing contract first.`);
-        return;
-      }
+    if (!employeeId) {
+      setError409('Please select an employee.');
+      return;
+    }
+    if (!salaryStructureId) {
+      setError409('Please select a salary structure.');
+      return;
+    }
+    if (!startDate) {
+      setError409('Start date is required.');
+      return;
+    }
+    if (!wage || Number(wage) <= 0) {
+      setError409('Valid wage amount is required.');
+      return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const payload = {
+        employeeId,
+        startDate,
+        endDate: endDate ? endDate : null,
+        wage: Number(wage),
+        department,
+        position,
+        salaryStructureId,
+        status: status.toLowerCase(),
+      };
+
+      if (isEdit) {
+        await contractsApi.update(id, payload);
+      } else {
+        await contractsApi.create(payload);
+      }
       navigate('/contracts');
-    }, 500);
+    } catch (err) {
+      setError409(err.message || 'Failed to save contract');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="space-y-6 max-w-4xl" data-testid="contract-form-page">
+        <Breadcrumb items={[
+          { label: 'Home', href: '/' },
+          { label: 'Contracts', href: '/contracts' },
+          { label: 'Loading...' },
+        ]} />
+        <Card>
+          <CardBody className="py-12 text-center text-gray-500">
+            Loading contract form details...
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl" data-testid="contract-form-page">
       <Breadcrumb items={[
         { label: 'Home', href: '/' },
         { label: 'Contracts', href: '/contracts' },
-        { label: isEdit ? `Contract: ${existing?.contractId || id}` : 'New Contract' },
+        { label: isEdit ? `Contract: ${contractCode || id}` : 'New Contract' },
       ]} />
 
       <PageHeader
-        title={isEdit ? `Edit Contract: ${existing?.contractId || id}` : 'New Employee Contract'}
+        title={isEdit ? `Edit Contract: ${contractCode || id}` : 'New Employee Contract'}
         subtitle="Specify employment terms, compensation amount, and associated salary calculation structure"
         actions={
           <div className="flex items-center gap-2">
@@ -73,9 +174,11 @@ export function ContractForm() {
 
       {error409 && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 text-red-800 text-sm" role="alert">
-          <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+          <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+          </svg>
           <div>
-            <p className="font-semibold">Contract Overlap Error</p>
+            <p className="font-semibold">Contract Error</p>
             <p className="text-xs text-red-700 mt-0.5">{error409}</p>
           </div>
         </div>
@@ -91,7 +194,7 @@ export function ContractForm() {
               label="Employee *"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              options={employees.map(e => ({ value: e.id, label: `${e.fullName} (${e.employeeId})` }))}
+              options={employeeList.map(e => ({ value: e.id, label: `${e.name} (${e.department})` }))}
               required
             />
             <Select
@@ -99,9 +202,9 @@ export function ContractForm() {
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               options={[
-                { value: 'Active', label: 'Active' },
-                { value: 'Draft', label: 'Draft' },
-                { value: 'Expired', label: 'Expired' },
+                { value: 'active', label: 'Active' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'expired', label: 'Expired' },
               ]}
               required
             />
@@ -125,25 +228,25 @@ export function ContractForm() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
-              label="Wage Amount (₹ / Month) *"
+              label="Wage (₹ / Month) *"
               type="number"
-              value={wageAmount}
-              onChange={(e) => setWageAmount(e.target.value)}
+              value={wage}
+              onChange={(e) => setWage(e.target.value)}
               placeholder="120000"
               required
             />
             <Select
               label="Department *"
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-              options={departments.map(d => ({ value: d.id, label: d.name }))}
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
               required
             />
             <Select
               label="Job Position *"
-              value={jobPositionId}
-              onChange={(e) => setJobPositionId(e.target.value)}
-              options={jobPositions.map(p => ({ value: p.id, label: p.name }))}
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              options={POSITIONS.map(p => ({ value: p, label: p }))}
               required
             />
           </div>
@@ -153,14 +256,8 @@ export function ContractForm() {
               label="Salary Structure *"
               value={salaryStructureId}
               onChange={(e) => setSalaryStructureId(e.target.value)}
-              options={salaryStructures.map(s => ({ value: s.id, label: s.name }))}
+              options={structureList.map(s => ({ value: s.id, label: s.name }))}
               required
-            />
-            <Input
-              label="Internal Notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Standard probation period applies"
             />
           </div>
         </CardBody>

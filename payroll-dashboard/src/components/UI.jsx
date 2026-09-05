@@ -135,8 +135,8 @@ export const Badge = ({ children, variant = 'gray', size = 'md', className = '',
   };
   
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
-      {dot && <span className={`w-2 h-2 rounded-full ${dotColor || `bg-${color}-500`}`} />}
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium ${variants[variant] || variants.gray} ${sizes[size] || sizes.md} ${className}`} {...props}>
+      {dot && <span className={`w-2 h-2 rounded-full ${dotColor || 'bg-current'}`} />}
       {children}
     </span>
   );

@@ -4,10 +4,8 @@ import {
   Card, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb 
 } from '../components/UI';
-import { 
-  contracts as mockContracts, employees as mockEmployees, salaryStructures, formatDate, getStatusColor
-} from '../data/mockData';
-import { contractsApi, authApi } from '../lib/api';
+import { formatDate, getStatusColor } from '../lib/formatters';
+import { contractsApi, employeesApi } from '../lib/api';
 
 
 const statusOptions = [
@@ -29,37 +27,42 @@ export function ContractsList() {
   const [selectedIds, setSelectedIds] = useState([]);
 
   const [contractList, setContractList] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
 
-    authApi.login({ email: 'admin@peoplepay360.com', password: 'Admin@123' })
-      .then(res => {
-        if (res.token) localStorage.setItem('token', res.token);
-        return contractsApi.getAll();
-      })
-      .catch(() => contractsApi.getAll())
-      .then((data) => {
+    Promise.all([
+      contractsApi.getAll().catch(() => []),
+      employeesApi.getAll().catch(() => [])
+    ])
+      .then(([contractsData, employeesData]) => {
         if (!isMounted) return;
-        const list = Array.isArray(data) ? data : [];
+        const list = Array.isArray(contractsData) ? contractsData : [];
         const mapped = list.map((c) => ({
           id: c.id,
           contractId: c.id,
           employeeId: c.employeeId,
           employeeName: c.employee?.name || 'Employee',
           wage: c.wage,
-          startDate: c.startDate,
-          endDate: c.endDate,
+          wageAmount: c.wage,
+          startDate: c.startDate?.split('T')[0] || c.startDate,
+          endDate: c.endDate?.split('T')[0] || c.endDate,
           status: c.status || 'Active',
           salaryStructureId: c.salaryStructureId,
-          position: c.position,
-          department: c.department,
+          salaryStructureName: c.salaryStructure?.name || 'Standard Structure',
+          position: c.position || c.employee?.jobPosition,
+          department: c.department || c.employee?.department,
         }));
         setContractList(mapped);
+
+        const empList = Array.isArray(employeesData) ? employeesData : [];
+        setEmployees(empList.map(e => ({ id: e.id, fullName: e.name })));
       })
       .catch((err) => {
-        console.error('Error loading contracts from API', err);
+        console.error('Error loading contracts or employees from API', err);
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -71,11 +74,10 @@ export function ContractsList() {
 
   const filteredContracts = useMemo(() => {
     return contractList.filter(contract => {
-      const emp = mockEmployees.find(e => e.id === contract.employeeId);
       const matchesSearch = !search || 
-        (emp && (emp.fullName.toLowerCase().includes(search.toLowerCase()) || emp.employeeId.toLowerCase().includes(search.toLowerCase()))) ||
         (contract.employeeName && contract.employeeName.toLowerCase().includes(search.toLowerCase())) ||
-        contract.contractId.toLowerCase().includes(search.toLowerCase());
+        (contract.contractId && contract.contractId.toLowerCase().includes(search.toLowerCase())) ||
+        (contract.position && contract.position.toLowerCase().includes(search.toLowerCase()));
       const matchesEmp = employeeFilter === 'all' || contract.employeeId === employeeFilter;
       const matchesStatus = statusFilter === 'all' || contract.status?.toLowerCase() === statusFilter.toLowerCase();
       return matchesSearch && matchesEmp && matchesStatus;
@@ -89,14 +91,18 @@ export function ContractsList() {
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearch(value);
-    setSearchParams(prev => { prev.set('search', value); return prev; });
+    setSearchParams(prev => {
+      if (value) prev.set('search', value);
+      else prev.delete('search');
+      return prev;
+    });
     setCurrentPage(1);
   };
 
   const handleFilterChange = (key, value) => {
-    setSearchParams(prev => { 
-      if (value === 'all') prev.delete(key);
-      else prev.set(key, value);
+    setSearchParams(prev => {
+      if (value && value !== 'all') prev.set(key, value);
+      else prev.delete(key);
       return prev; 
     });
     setCurrentPage(1);
@@ -106,35 +112,31 @@ export function ContractsList() {
 
   const activeFilters = [
     search && { key: 'search', label: `Search: "${search}"`, onRemove: () => { setSearch(''); handleFilterChange('search', ''); } },
-    employeeFilter !== 'all' && { key: 'employee', label: `Employee: ${employees.find(e => e.id === employeeFilter)?.fullName}`, onRemove: () => { setEmployeeFilter('all'); handleFilterChange('employeeId', 'all'); } },
+    employeeFilter !== 'all' && { key: 'employee', label: `Employee ID: ${employeeFilter}`, onRemove: () => { setEmployeeFilter('all'); handleFilterChange('employeeId', 'all'); } },
     statusFilter !== 'all' && { key: 'status', label: `Status: ${statusFilter}`, onRemove: () => handleFilterChange('status', 'all') },
   ].filter(Boolean);
 
   const columns = [
-    { key: 'employee', header: 'Employee', width: '200px', render: (row) => {
-      const emp = employees.find(e => e.id === row.employeeId);
-      return emp ? (
-        <div className="flex items-center gap-3">
-          <Avatar name={emp.fullName} size="sm" />
-          <div>
-            <p className="font-semibold text-gray-900">{emp.fullName}</p>
-            <p className="text-xs text-gray-500">{emp.jobPositionId}</p>
-          </div>
+    { key: 'employee', header: 'Employee', width: '200px', render: (row) => (
+      <div className="flex items-center gap-3">
+        <Avatar name={row.employeeName} size="sm" />
+        <div>
+          <p className="font-semibold text-gray-900">{row.employeeName}</p>
+          <p className="text-xs text-gray-500">{row.position || row.department || '—'}</p>
         </div>
-      ) : '—';
-    }},
-    { key: 'contractId', header: 'Contract ID', width: '110px', render: (row) => (
+      </div>
+    )},
+    { key: 'contractId', header: 'Contract ID', width: '130px', render: (row) => (
       <span className="font-mono text-xs text-gray-700">{row.contractId}</span>
     )},
     { key: 'wageAmount', header: 'Wage', width: '130px', render: (row) => (
-      <span className="font-mono font-medium text-gray-900">₹{Number(row.wageAmount).toLocaleString('en-IN')}</span>
+      <span className="font-mono font-medium text-gray-900">₹{Number(row.wageAmount || 0).toLocaleString('en-IN')}</span>
     )},
     { key: 'startDate', header: 'Start Date', width: '110px', render: (row) => formatDate(row.startDate) },
     { key: 'endDate', header: 'End Date', width: '110px', render: (row) => row.endDate ? formatDate(row.endDate) : 'Permanent' },
-    { key: 'salaryStructure', header: 'Salary Structure', width: '160px', render: (row) => {
-      const struct = salaryStructures.find(s => s.id === row.salaryStructureId);
-      return struct ? <Badge variant="gray">{struct.name}</Badge> : '—';
-    }},
+    { key: 'salaryStructure', header: 'Salary Structure', width: '160px', render: (row) => (
+      <Badge variant="gray">{row.salaryStructureName || 'Standard'}</Badge>
+    )},
     { key: 'status', header: 'Status', width: '110px', render: (row) => (
       <Badge variant={getStatusColor(row.status)}>{row.status}</Badge>
     )},
@@ -213,7 +215,7 @@ export function ContractsList() {
             onRowClick={(row) => navigate(`/contracts/${row.id}`)}
             selectedKeys={selectedIds}
             onSelectionChange={handleSelectionChange}
-            loading={false}
+            loading={loading}
             emptyMessage="No contracts found matching your criteria"
           />
         </CardBody>

@@ -1,48 +1,67 @@
 // src/pages/SchedulesList.jsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, CardBody, PageHeader, Button, Badge, Input, Table, Breadcrumb 
 } from '../components/UI';
-import { schedules, employees } from '../data/mockData';
+import { schedulesApi } from '../lib/api';
 
 export function SchedulesList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    schedulesApi.getAll()
+      .then(data => {
+        if (!isMounted) return;
+        if (Array.isArray(data)) {
+          setSchedules(data.map(s => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            weeklyHours: `${s.weeklyHours || 40} hours/week`,
+            assignedCount: s._count?.employees ?? s.employees?.length ?? 0,
+            status: 'Active',
+          })));
+        }
+      })
+      .catch(err => console.error('Failed to load schedules:', err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => { isMounted = false; };
+  }, []);
 
   const scheduleData = useMemo(() => {
-    return schedules.map(sched => {
-      const assignedCount = employees.filter(e => e.scheduleId === sched.id).length;
-      return {
-        ...sched,
-        assignedCount,
-      };
-    }).filter(s => 
+    return schedules.filter(s => 
       !search || 
       s.name.toLowerCase().includes(search.toLowerCase()) || 
       s.type.toLowerCase().includes(search.toLowerCase())
     );
-  }, [search]);
+  }, [schedules, search]);
 
   const columns = [
     { key: 'name', header: 'Name', width: '220px', render: (row) => (
       <div>
         <p className="font-semibold text-gray-900">{row.name}</p>
-        <p className="text-xs text-gray-500">{row.timezone || 'UTC'}</p>
+        <p className="text-xs text-gray-500">{row.type} Schedule</p>
       </div>
     )},
     { key: 'type', header: 'Type', width: '140px', render: (row) => (
       <Badge variant="gray">{row.type}</Badge>
     )},
     { key: 'weeklyHours', header: 'Weekly Hours', width: '160px', render: (row) => (
-      // ponytail: display weeklyHours directly from data field as specified in Task 6 contract
-      <span className="font-medium text-gray-900">{row.weeklyHours || '40 hours/week'}</span>
+      <span className="font-medium text-gray-900">{row.weeklyHours}</span>
     )},
     { key: 'assignedCount', header: 'Employees Assigned', width: '160px', render: (row) => (
       <Badge variant="primary">{row.assignedCount} Employees</Badge>
     )},
     { key: 'status', header: 'Status', width: '120px', render: (row) => (
-      <Badge variant={row.status === 'Active' ? 'success' : 'gray'}>{row.status || 'Active'}</Badge>
+      <Badge variant={row.status === 'Active' ? 'success' : 'gray'}>{row.status}</Badge>
     )},
     { key: 'actions', header: 'Actions', width: '120px', render: (row) => (
       <div className="flex items-center gap-1">
@@ -87,7 +106,7 @@ export function SchedulesList() {
             data={scheduleData}
             keyField="id"
             onRowClick={(row) => navigate(`/schedules/${row.id}`)}
-            emptyMessage="No working schedules found"
+            emptyMessage={loading ? "Loading working schedules..." : "No working schedules found"}
           />
         </CardBody>
       </Card>

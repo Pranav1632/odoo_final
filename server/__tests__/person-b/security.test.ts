@@ -53,6 +53,16 @@ const validatedPayrunId = 'payrun-validated';
 const empAPayslipId = 'payslip-emp-A';
 
 // ---------------------------------------------------------------------------
+// Mock Queue & Redis
+// ---------------------------------------------------------------------------
+jest.mock('../../src/lib/payroll/queue', () => ({
+  redisConnection: { quit: jest.fn(), disconnect: jest.fn() },
+  payslipSendQueue: {
+    add: jest.fn().mockResolvedValue({ id: 'job-1' }),
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // Mock Prisma
 // ---------------------------------------------------------------------------
 jest.mock('../../src/lib/prisma', () => {
@@ -304,6 +314,22 @@ describe('Payslip — employee data isolation', () => {
     const res = await request(app).get(`/api/payslips/${empAPayslipId}`).set('Authorization', `Bearer ${payrollUserToken}`);
     expect(res.status).toBe(200);
   });
+
+  test('EMPLOYEE: GET /api/payslips forces filter to own employeeId only', async () => {
+    const { prisma } = require('../../src/lib/prisma');
+    (prisma.payslip.findMany as jest.Mock).mockClear();
+
+    const res = await request(app)
+      .get('/api/payslips?employeeId=other-emp')
+      .set('Authorization', `Bearer ${employeeToken}`);
+
+    expect(res.status).toBe(200);
+    expect(prisma.payslip.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ employeeId: 'emp-A' }),
+      })
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -375,19 +401,16 @@ describe('Input validation', () => {
 // ---------------------------------------------------------------------------
 describe('BullMQ worker failure handling', () => {
   test('POST /api/payruns/:id/send-payslips returns 503 when queue add throws ECONNREFUSED', async () => {
-    // Mock the queue to throw a connection error
-    jest.mock('../../src/lib/payroll/queue', () => ({
-      payslipSendQueue: {
-        add: jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:6379')),
-      },
-    }));
+    const { payslipSendQueue } = require('../../src/lib/payroll/queue');
+    (payslipSendQueue.add as jest.Mock).mockRejectedValueOnce(
+      new Error('connect ECONNREFUSED 127.0.0.1:6379')
+    );
 
-    // Re-require the app after mocking the queue
-    jest.resetModules();
-    // Note: Full Redis mock requires module re-loading. This test verifies the route's
-    // error handling pattern. In a real environment, mock at the module level before
-    // any require. The 503 logic is verified by the route code inspection.
-    // The send-payslips route catches ECONNREFUSED and returns 503.
-    expect(true).toBe(true); // Route code verified by inspection
+    const res = await request(app)
+      .post(`/api/payruns/${existingPayrunId}/send-payslips`)
+      .set('Authorization', `Bearer ${payrollManagerToken}`);
+
+    expect(res.status).toBe(503);
+    expect(res.body.error).toMatch(/Queue unavailable — Redis is unreachable/i);
   });
 });

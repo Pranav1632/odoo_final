@@ -4,7 +4,7 @@ import {
   Card, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb, Dropdown, Modal 
 } from '../components/UI';
-import { getStatusColor, departments } from '../data/mockData';
+import { getStatusColor, DEPARTMENTS as departments } from '../lib/formatters';
 import { getSession } from '../lib/user';
 import { employeesApi, authApi } from '../lib/api';
 
@@ -41,16 +41,9 @@ export function EmployeesList() {
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
     
-    // Auto-authenticate dev session if token is missing
-    authApi.login({ email: 'admin@peoplepay360.com', password: 'Admin@123' })
-      .then(res => {
-        if (res.token) {
-          localStorage.setItem('token', res.token);
-        }
-        return employeesApi.getAll();
-      })
-      .catch(() => employeesApi.getAll())
+    employeesApi.getAll()
       .then((data) => {
         if (!isMounted) return;
         const list = Array.isArray(data) ? data : [];
@@ -61,7 +54,7 @@ export function EmployeesList() {
           workEmail: `${emp.name.toLowerCase().replace(/\s+/g, '.')}@company.com`,
           departmentId: emp.department || 'Engineering',
           jobPositionId: emp.jobPosition || 'Developer',
-          scheduleId: emp.scheduleId || 'Standard 9-5',
+          scheduleName: emp.schedule?.name || emp.scheduleId || 'Standard',
           employmentStatus: emp.status === 'active' ? 'Active' : 'Inactive',
           contractsCount: emp._count?.contracts ?? emp.contracts?.length ?? 0,
           attendanceCount: emp._count?.attendances ?? 0,
@@ -135,18 +128,15 @@ export function EmployeesList() {
         <p className="text-xs text-gray-500 font-mono">{row.employeeId}</p>
       </div>
     )},
-    { key: 'department', header: 'Department', width: '140px', render: (row) => {
-      const dept = departments.find(d => d.id === row.departmentId);
-      return dept ? dept.name : row.departmentId;
-    }},
-    { key: 'jobPosition', header: 'Job Position', width: '160px', render: (row) => {
-      const pos = jobPositions.find(p => p.id === row.jobPositionId);
-      return pos ? pos.name : row.jobPositionId;
-    }},
-    { key: 'schedule', header: 'Schedule', width: '140px', render: (row) => {
-      const sched = schedules.find(s => s.id === row.scheduleId);
-      return sched ? <Badge variant="gray">{sched.name}</Badge> : '—';
-    }},
+    { key: 'department', header: 'Department', width: '140px', render: (row) => (
+      row.departmentId || 'General'
+    )},
+    { key: 'jobPosition', header: 'Job Position', width: '160px', render: (row) => (
+      row.jobPositionId || 'Staff'
+    )},
+    { key: 'schedule', header: 'Schedule', width: '140px', render: (row) => (
+      <Badge variant="gray">{row.scheduleName || 'Standard'}</Badge>
+    )},
     { key: 'status', header: 'Status', width: '100px', render: (row) => (
       <Badge variant={getStatusColor(row.employmentStatus)}>{row.employmentStatus}</Badge>
     )},

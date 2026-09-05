@@ -19,6 +19,9 @@ import salaryRuleRoutes from './routes/salaryRules';
 import payrunRoutes from './routes/payruns';
 import payslipRoutes from './routes/payslips';
 
+// Person C's route
+import dashboardRoutes from './routes/dashboard';
+
 /**
  * Creates and configures the Express app without calling listen().
  * Exported for use in supertest-based integration tests.
@@ -69,6 +72,9 @@ export function createApp() {
   app.use('/api/salary-rules', salaryRuleRoutes);
   app.use('/api/payruns', payrunRoutes);
   app.use('/api/payslips', payslipRoutes);
+
+  // Person C routes
+  app.use('/api/dashboard', dashboardRoutes);
 
   // Must be LAST — after all routes
   app.use(errorHandler);

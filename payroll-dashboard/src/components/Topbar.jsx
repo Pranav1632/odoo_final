@@ -15,7 +15,7 @@ const ALL_NAV_ITEMS = [
   { id: 'audit', label: 'Audit Log', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'] },
 ];
 
-export function Topbar({ onNavigate, user, onToggleMobileNav }) {
+export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -179,16 +179,27 @@ export function Topbar({ onNavigate, user, onToggleMobileNav }) {
               <svg className="w-3.5 h-3.5 text-gray-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
             </button>
             {userMenuOpen && (
-              <Dropdown
-                trigger={<div />}
-                items={[
-                  { label: 'My Profile', onClick: () => { setUserMenuOpen(false); onNavigate('/profile'); } },
-                  { label: 'Settings', onClick: () => { setUserMenuOpen(false); onNavigate('/settings'); } },
-                  { divider: true },
-                  { label: 'Sign Out', variant: 'danger', onClick: () => { setUserMenuOpen(false); } },
-                ]}
-                align="right"
-              />
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-1.5 z-50 animate-scale-in">
+                <div className="px-3.5 py-2 border-b border-gray-100">
+                  <p className="text-xs font-semibold text-ink-900 truncate">{user?.name || 'User'}</p>
+                  <p className="text-[11px] text-gray-500 font-mono truncate">{user?.role || 'EMPLOYEE'}</p>
+                </div>
+                <button
+                  onClick={() => { setUserMenuOpen(false); onNavigate('/profile'); }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-ink-900 hover:bg-cream transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <span>My Profile</span>
+                </button>
+                <div className="my-1 border-t border-gray-100" />
+                <button
+                  onClick={() => { setUserMenuOpen(false); onLogout?.(); }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  <span>Sign Out</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -197,7 +208,7 @@ export function Topbar({ onNavigate, user, onToggleMobileNav }) {
   );
 }
 
-export function MobileNav({ currentPath, onNavigate, isOpen, onClose, user }) {
+export function MobileNav({ currentPath, onNavigate, isOpen, onClose, user, onLogout }) {
   if (!isOpen) return null;
 
   const userRole = user?.role || 'HR_PAYROLL_MANAGER';
@@ -208,14 +219,17 @@ export function MobileNav({ currentPath, onNavigate, isOpen, onClose, user }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 lg:hidden" onClick={onClose} aria-hidden="true">
-      <div className="fixed inset-y-0 right-0 w-72 bg-white shadow-xl animate-slide-in" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-y-0 right-0 w-72 bg-white shadow-xl animate-slide-in flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Navigation</h2>
-          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-cream transition-colors" aria-label="Close menu">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+          <div>
+            <h2 className="text-base font-bold text-ink-900">peoplepay<span className="text-accent-500">360</span></h2>
+            <p className="text-xs text-gray-500">{user?.name} ({user?.role})</p>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-cream transition-colors" aria-label="Close menu">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
-        <nav className="p-4" role="navigation" aria-label="Mobile navigation">
+        <nav className="p-4 flex-1 overflow-y-auto" role="navigation" aria-label="Mobile navigation">
           <ul className="space-y-1">
             {visibleNavItems.map(item => {
               const isActive = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href));
@@ -224,7 +238,7 @@ export function MobileNav({ currentPath, onNavigate, isOpen, onClose, user }) {
                   <a
                     href={item.href}
                     onClick={(e) => { e.preventDefault(); onNavigate(item.href); onClose(); }}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-semibold transition-colors ${
                       isActive
                         ? 'bg-ink-900 text-white'
                         : 'text-gray-700 hover:bg-cream'
@@ -237,6 +251,14 @@ export function MobileNav({ currentPath, onNavigate, isOpen, onClose, user }) {
             })}
           </ul>
         </nav>
+        <div className="p-4 border-t border-gray-100">
+          <button
+            onClick={() => { onClose(); onLogout?.(); }}
+            className="w-full py-2 px-3 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors text-center"
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
     </div>
   );

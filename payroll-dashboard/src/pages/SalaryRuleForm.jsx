@@ -1,10 +1,10 @@
 // src/pages/SalaryRuleForm.jsx
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Card, CardHeader, CardBody, PageHeader, Button, Input, Select, Breadcrumb 
 } from '../components/UI';
-import { salaryStructures } from '../data/mockData';
+import { salaryStructuresApi, salaryRulesApi } from '../lib/api';
 import { getSession } from '../lib/user';
 
 export function SalaryRuleForm() {
@@ -16,25 +16,52 @@ export function SalaryRuleForm() {
   // Role check: HR_PAYROLL_USER is read-only on rules (security requirement)
   const canEdit = session?.role === 'HR_PAYROLL_MANAGER' || session?.role === 'ADMIN' || !session;
 
-  const allRules = useMemo(() => {
-    return salaryStructures.flatMap(s => s.rules || []);
-  }, []);
-
-  const existing = useMemo(() => {
-    return isEdit ? allRules.find(r => r.id === id) : null;
-  }, [id, isEdit, allRules]);
-
-  const [name, setName] = useState(existing?.name || '');
-  const [code, setCode] = useState(existing?.code || '');
-  const [category, setCategory] = useState(existing?.category || 'Allowance');
-  const [sequence, setSequence] = useState(existing?.seq?.toString() || '1');
-  const [method, setMethod] = useState(existing?.method?.toLowerCase() || 'percentage');
-  const [amount, setAmount] = useState(existing?.amount?.toString() || '');
-  const [ofRule, setOfRule] = useState(existing?.ofRule || 'BASIC');
-  const [percentage, setPercentage] = useState(existing?.percentage?.toString() || '40');
-  const [formula, setFormula] = useState(existing?.formula || 'BASIC + HRA');
+  const [structureList, setStructureList] = useState([]);
+  const [structureId, setStructureId] = useState('');
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [category, setCategory] = useState('Allowance');
+  const [sequence, setSequence] = useState('1');
+  const [method, setMethod] = useState('percentage');
+  const [amount, setAmount] = useState('');
+  const [ofRule, setOfRule] = useState('BASIC');
+  const [percentage, setPercentage] = useState('40');
+  const [formula, setFormula] = useState('BASIC + HRA');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      salaryStructuresApi.getAll().catch(() => []),
+      isEdit ? salaryRulesApi.getById(id).catch(() => null) : Promise.resolve(null),
+    ]).then(([structures, rule]) => {
+      if (!isMounted) return;
+
+      const structArr = Array.isArray(structures) ? structures : [];
+      setStructureList(structArr);
+
+      if (rule) {
+        setStructureId(rule.structureId || '');
+        setName(rule.name || '');
+        setCode(rule.code || '');
+        setCategory(rule.category || 'Allowance');
+        setSequence(rule.sequence ? rule.sequence.toString() : '1');
+        setMethod(rule.computationMethod || 'percentage');
+        setAmount(rule.amount !== null && rule.amount !== undefined ? rule.amount.toString() : '');
+        setOfRule(rule.percentageOf || 'BASIC');
+        setPercentage(rule.percentageValue !== null && rule.percentageValue !== undefined ? rule.percentageValue.toString() : '40');
+        setFormula(rule.formula || 'BASIC + HRA');
+      } else {
+        if (structArr.length > 0) setStructureId(structArr[0].id);
+      }
+    }).finally(() => {
+      if (isMounted) setInitialLoading(false);
+    });
+
+    return () => { isMounted = false; };
+  }, [id, isEdit]);
 
   const handleCodeChange = (val) => {
     const uppercaseVal = val.toUpperCase();
@@ -46,7 +73,7 @@ export function SalaryRuleForm() {
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
@@ -54,9 +81,10 @@ export function SalaryRuleForm() {
     if (!code.trim() || !/^[A-Z_]+$/.test(code)) {
       newErrors.code = 'Rule code must match /^[A-Z_]+$/';
     }
-    if (method === 'fixed' && !amount) newErrors.amount = 'Amount is required for fixed method';
-    if (method === 'percentage' && !percentage) newErrors.percentage = 'Percentage value is required';
+    if (method === 'fixed' && (!amount || isNaN(Number(amount)))) newErrors.amount = 'Valid amount is required for fixed method';
+    if (method === 'percentage' && (!percentage || isNaN(Number(percentage)))) newErrors.percentage = 'Percentage value is required';
     if (method === 'formula' && !formula.trim()) newErrors.formula = 'Formula is required';
+    if (!structureId) newErrors.structureId = 'Salary structure is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -64,11 +92,64 @@ export function SalaryRuleForm() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const payload = {
+        structureId,
+        name,
+        code,
+        category,
+        sequence: parseInt(sequence, 10) || 1,
+        computationMethod: method,
+        amount: method === 'fixed' ? parseFloat(amount) : null,
+        percentageOf: method === 'percentage' ? ofRule : null,
+        percentageValue: method === 'percentage' ? parseFloat(percentage) : null,
+        formula: method === 'formula' ? formula : null,
+      };
+
+      if (isEdit) {
+        await salaryRulesApi.update(id, payload);
+      } else {
+        await salaryRulesApi.create(payload);
+      }
       navigate(-1);
-    }, 500);
+    } catch (err) {
+      console.error('Failed to save salary rule:', err);
+      setErrors(prev => ({ ...prev, form: err.message || 'Failed to save salary rule' }));
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this salary rule?')) return;
+    setLoading(true);
+    try {
+      await salaryRulesApi.delete(id);
+      navigate(-1);
+    } catch (err) {
+      console.error('Failed to delete salary rule:', err);
+      setErrors(prev => ({ ...prev, form: err.message || 'Failed to delete salary rule' }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (initialLoading) {
+    return (
+      <div className="space-y-6 max-w-3xl" data-testid="salary-rule-form-page">
+        <Breadcrumb items={[
+          { label: 'Home', href: '/' },
+          { label: 'Salary Structures', href: '/salary-structures' },
+          { label: 'Loading...' },
+        ]} />
+        <Card>
+          <CardBody className="py-12 text-center text-gray-500">
+            Loading rule details...
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-3xl" data-testid="salary-rule-form-page">
@@ -86,13 +167,19 @@ export function SalaryRuleForm() {
             <Button variant="secondary" onClick={() => navigate(-1)}>Back</Button>
             {canEdit && (
               <>
-                {isEdit && <Button variant="danger" onClick={() => navigate(-1)}>Delete</Button>}
+                {isEdit && <Button variant="danger" onClick={handleDelete} loading={loading}>Delete</Button>}
                 <Button variant="primary" onClick={handleSave} loading={loading}>Save</Button>
               </>
             )}
           </div>
         }
       />
+
+      {errors.form && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm">
+          {errors.form}
+        </div>
+      )}
 
       {!canEdit && (
         <div className="p-3 bg-cream text-gray-700 text-xs rounded-xl border border-gray-200">
@@ -106,6 +193,14 @@ export function SalaryRuleForm() {
         </CardHeader>
         <CardBody className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Salary Structure *"
+              value={structureId}
+              onChange={(e) => setStructureId(e.target.value)}
+              options={structureList.map(s => ({ value: s.id, label: s.name }))}
+              disabled={!canEdit || isEdit}
+              required
+            />
             <Input
               label="Rule Name *"
               value={name}
@@ -115,6 +210,9 @@ export function SalaryRuleForm() {
               disabled={!canEdit}
               required
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Rule Code * (Uppercase & Underscores only)"
               value={code}
@@ -124,9 +222,6 @@ export function SalaryRuleForm() {
               disabled={!canEdit}
               required
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Category *"
               value={category}
@@ -140,6 +235,9 @@ export function SalaryRuleForm() {
               ]}
               disabled={!canEdit}
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Computation Sequence *"
               type="number"

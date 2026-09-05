@@ -4,9 +4,9 @@ import {
   Card, CardHeader, CardBody, PageHeader, Button, Input, Select, Badge, Avatar, Modal, Breadcrumb 
 } from '../components/UI';
 import { 
-  employees, departments, jobPositions, schedules,
-  getInitials
-} from '../data/mockData';
+  DEPARTMENTS as departments, JOB_POSITIONS as jobPositions, getInitials 
+} from '../lib/formatters';
+import { employeesApi, schedulesApi } from '../lib/api';
 
 const employmentStatusOptions = [
   { value: 'Active', label: 'Active' },
@@ -64,82 +64,112 @@ export function EmployeeForm() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  
-  const employee = isEdit ? employees.find(e => e.id === id) : null;
-  
+  const [scheduleList, setScheduleList] = useState([]);
+  const [managerList, setManagerList] = useState([]);
+
   useEffect(() => {
-    if (employee) {
-      setFormData({
-        fullName: employee.fullName,
-        dateOfBirth: employee.dateOfBirth,
-        gender: employee.gender,
-        personalEmail: employee.personalEmail,
-        phone: employee.phone,
-        address: employee.address,
-        departmentId: employee.departmentId,
-        jobPositionId: employee.jobPositionId,
-        managerId: employee.managerId || '',
-        scheduleId: employee.scheduleId,
-        employmentStatus: employee.employmentStatus,
-        employmentType: employee.employmentType,
-        startDate: employee.startDate,
-        endDate: employee.endDate || '',
-        workEmail: employee.workEmail,
-        workPhone: employee.workPhone,
-        bankName: employee.bankName || '',
-        accountNumber: employee.accountNumber ? employee.accountNumber.replace('****', '') : '',
-        ifscCode: employee.ifscCode || '',
-        accountHolderName: employee.accountHolderName || '',
-        paymentMethod: employee.paymentMethod || 'Bank Transfer',
-      });
+    schedulesApi.getAll()
+      .then(data => { if (Array.isArray(data)) setScheduleList(data); })
+      .catch(() => {});
+
+    employeesApi.getAll()
+      .then(data => { if (Array.isArray(data)) setManagerList(data); })
+      .catch(() => {});
+
+    if (isEdit) {
+      setLoading(true);
+      employeesApi.getById(id)
+        .then(emp => {
+          if (emp) {
+            setFormData({
+              fullName: emp.name || '',
+              dateOfBirth: '1995-01-01',
+              gender: 'Male',
+              personalEmail: `${(emp.name || 'user').toLowerCase().replace(/\s+/g, '.')}@personal.com`,
+              phone: '+1-555-0199',
+              address: '123 Main St, City, ST',
+              departmentId: emp.department || 'Engineering',
+              jobPositionId: emp.jobPosition || 'Developer',
+              managerId: emp.managerId || '',
+              scheduleId: emp.scheduleId || '',
+              employmentStatus: emp.status === 'active' ? 'Active' : 'Inactive',
+              employmentType: 'Full-time',
+              startDate: emp.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+              endDate: '',
+              workEmail: `${(emp.name || 'user').toLowerCase().replace(/\s+/g, '.')}@company.com`,
+              workPhone: '+1-555-0199',
+              bankName: 'HDFC Bank',
+              accountNumber: emp.bankAccountNumber || '',
+              ifscCode: 'HDFC0001234',
+              accountHolderName: emp.name || '',
+              paymentMethod: 'Bank Transfer',
+            });
+          }
+        })
+        .catch(err => console.error(err))
+        .finally(() => setLoading(false));
     } else {
       const today = new Date().toISOString().split('T')[0];
-      setFormData(prev => ({ ...prev, startDate: today }));
+      setFormData(prev => ({ ...prev, startDate: today, departmentId: 'Engineering', jobPositionId: 'Developer' }));
     }
-  }, [employee]);
-  
+  }, [id, isEdit]);
+
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
-  
+
   const validate = () => {
     const newErrors = {};
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
     else if (formData.fullName.length < 2) newErrors.fullName = 'Full name must be at least 2 characters';
     if (!formData.departmentId) newErrors.departmentId = 'Department is required';
     if (!formData.jobPositionId) newErrors.jobPositionId = 'Job position is required';
-    if (!formData.scheduleId) newErrors.scheduleId = 'Working schedule is required';
     if (!formData.employmentStatus) newErrors.employmentStatus = 'Employment status is required';
     if (!formData.startDate) newErrors.startDate = 'Start date is required';
-    else if (new Date(formData.startDate) > new Date()) newErrors.startDate = 'Start date cannot be in the future';
     if (formData.workEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.workEmail)) {
       newErrors.workEmail = 'Invalid email format';
-    }
-    if (formData.accountNumber && !/^\d{8,18}$/.test(formData.accountNumber.replace(/\D/g, ''))) {
-      newErrors.accountNumber = 'Account number must be 8-18 digits';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    
+
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setLoading(false);
-    
-    navigate(`/employees/${isEdit ? id : 'emp-new'}`, { replace: true });
+    try {
+      const payload = {
+        name: formData.fullName,
+        department: formData.departmentId,
+        jobPosition: formData.jobPositionId,
+        scheduleId: formData.scheduleId || undefined,
+        managerId: formData.managerId || undefined,
+        bankAccountNumber: formData.accountNumber || undefined,
+        status: formData.employmentStatus === 'Active' ? 'active' : 'inactive',
+      };
+      if (isEdit) {
+        await employeesApi.update(id, payload);
+        navigate(`/employees/${id}`, { replace: true });
+      } else {
+        const created = await employeesApi.create(payload);
+        navigate(`/employees/${created.id || ''}`, { replace: true });
+      }
+    } catch (err) {
+      console.error('Failed to save employee:', err);
+      setErrors(prev => ({ ...prev, form: err.message || 'Failed to save employee' }));
+    } finally {
+      setLoading(false);
+    }
   };
-  
+
   const handleDiscard = () => {
     navigate(-1);
   };
-  
+
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -152,8 +182,8 @@ export function EmployeeForm() {
       reader.readAsDataURL(file);
     }
   };
-  
-  const filteredManagers = employees.filter(e => e.id !== id && e.employmentStatus === 'Active');
+
+  const filteredManagers = managerList.filter(e => e.id !== id && e.status === 'active');
   const filteredPositions = jobPositions.filter(p => p.departmentId === formData.departmentId);
   
   const breadcrumbs = [

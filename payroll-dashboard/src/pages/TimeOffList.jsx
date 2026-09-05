@@ -5,14 +5,9 @@ import {
   Card, CardHeader, CardBody, PageHeader, Button, Badge, Select, Input, 
   Table, Avatar, Pagination, Breadcrumb, Modal 
 } from '../components/UI';
-import { 
-  timeOffRequests as initialRequests, 
-  timeOffTypes as initialTypes, 
-  employees, 
-  allocations as initialAllocations,
-  formatDate, getStatusColor
-} from '../data/mockData';
+import { formatDate, getStatusColor } from '../lib/formatters';
 import { getSession } from '../lib/user';
+import { timeoffApi, employeesApi } from '../lib/api';
 
 export function TimeOffList() {
   const navigate = useNavigate();
@@ -22,6 +17,12 @@ export function TimeOffList() {
   const initialTab = searchParams.get('tab') || 'requests';
   const [currentTab, setCurrentTab] = useState(initialTab);
 
+  const [requestsList, setRequestsList] = useState([]);
+  const [allocationsList, setAllocationsList] = useState([]);
+  const [typesList, setTypesList] = useState([]);
+  const [employeesList, setEmployeesList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   // Sync tab with URL searchParams
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -30,11 +31,68 @@ export function TimeOffList() {
     }
   }, [searchParams]);
 
-  const [requestsList, setRequestsList] = useState(initialRequests);
-  const [allocationsList, setAllocationsList] = useState(
-    initialAllocations.map(a => ({ ...a, approved: a.status === 'Approved' }))
-  );
-  const [typesList, setTypesList] = useState(initialTypes);
+  const loadData = () => {
+    setLoading(true);
+    Promise.all([
+      timeoffApi.getRequests().catch(() => []),
+      timeoffApi.getAllocations().catch(() => []),
+      timeoffApi.getTypes().catch(() => []),
+      employeesApi.getAll().catch(() => []),
+    ]).then(([reqData, allocData, typeData, empData]) => {
+      if (Array.isArray(reqData)) {
+        setRequestsList(reqData.map(r => ({
+          id: r.id,
+          employeeId: r.employeeId,
+          employeeName: r.employee?.name || 'Employee',
+          leaveTypeId: r.typeId,
+          leaveTypeName: r.type?.name || 'Time Off',
+          fromDate: r.startDate ? r.startDate.split('T')[0] : '',
+          toDate: r.endDate ? r.endDate.split('T')[0] : '',
+          duration: `${r.duration} day${r.duration > 1 ? 's' : ''}`,
+          reason: 'Leave Request',
+          status: r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1).toLowerCase() : 'Pending',
+          requestedOn: r.createdAt ? r.createdAt.split('T')[0] : 'Recent',
+        })));
+      }
+      if (Array.isArray(allocData)) {
+        setAllocationsList(allocData.map(a => ({
+          id: a.id,
+          employeeId: a.employeeId,
+          employeeName: a.employee?.name || 'Employee',
+          leaveTypeId: a.typeId,
+          leaveTypeName: a.type?.name || 'Time Off',
+          allocated: a.allocated,
+          taken: a.taken,
+          remaining: a.allocated - a.taken,
+          approved: a.approved,
+          status: a.approved ? 'Approved' : 'Pending',
+        })));
+      }
+      if (Array.isArray(typeData)) {
+        setTypesList(typeData.map(t => ({
+          id: t.id,
+          name: t.name,
+          color: '#4F46E5',
+          unit: t.unit,
+        })));
+      }
+      if (Array.isArray(empData)) {
+        setEmployeesList(empData);
+        if (empData.length > 0 && !newReqEmployee) {
+          setNewReqEmployee(empData[0].id);
+        }
+      }
+      if (Array.isArray(typeData) && typeData.length > 0 && !newReqType) {
+        setNewReqType(typeData[0].id);
+      }
+    }).finally(() => {
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // Filters
   const employeeParam = searchParams.get('employeeId') || searchParams.get('employee') || 'all';
@@ -46,59 +104,74 @@ export function TimeOffList() {
 
   // Request Modal State
   const [newRequestModal, setNewRequestModal] = useState(false);
-  const [newReqEmployee, setNewReqEmployee] = useState(employees[0]?.id || '');
-  const [newReqType, setNewReqType] = useState(initialTypes[0]?.id || '');
+  const [newReqEmployee, setNewReqEmployee] = useState('');
+  const [newReqType, setNewReqType] = useState('');
   const [newReqStart, setNewReqStart] = useState('');
   const [newReqEnd, setNewReqEnd] = useState('');
-  const [newReqReason, setNewReqReason] = useState('');
+  const [submittingReq, setSubmittingReq] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   // Auto-calculated duration in days
   const calculatedDuration = useMemo(() => {
-    if (!newReqStart || !newReqEnd) return '0 days';
+    if (!newReqStart || !newReqEnd) return 1;
     const start = new Date(newReqStart);
     const end = new Date(newReqEnd);
     const diffTime = Math.abs(end - start);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return `${diffDays > 0 ? diffDays : 1} days`;
+    return diffDays > 0 ? diffDays : 1;
   }, [newReqStart, newReqEnd]);
 
-  // Handle Approve Request without page reload (Task 8 requirement)
-  const handleApproveRequest = (reqId) => {
-    setRequestsList(prev => prev.map(r => r.id === reqId ? { ...r, status: 'Approved' } : r));
+  const handleApproveRequest = async (reqId) => {
+    try {
+      await timeoffApi.approveRequest(reqId);
+      loadData();
+    } catch (err) {
+      console.warn('API approve failed:', err);
+      alert(err.message || 'Failed to approve request');
+    }
   };
 
-  const handleRefuseRequest = (reqId) => {
-    setRequestsList(prev => prev.map(r => r.id === reqId ? { ...r, status: 'Refused' } : r));
+  const handleRefuseRequest = async (reqId) => {
+    try {
+      await timeoffApi.refuseRequest(reqId);
+      loadData();
+    } catch (err) {
+      console.warn('API refuse failed:', err);
+      alert(err.message || 'Failed to refuse request');
+    }
   };
 
-  // Handle Approve Allocation
-  const handleApproveAllocation = (allocId) => {
-    setAllocationsList(prev => prev.map(a => a.id === allocId ? { ...a, approved: true, status: 'Approved' } : a));
-  };
-
-  const handleCreateRequest = (e) => {
+  const handleCreateRequest = async (e) => {
     e.preventDefault();
-    const newReq = {
-      id: `tor-new-${Date.now()}`,
-      employeeId: newReqEmployee,
-      leaveTypeId: newReqType,
-      fromDate: newReqStart,
-      toDate: newReqEnd,
-      duration: calculatedDuration,
-      reason: newReqReason,
-      status: 'Pending',
-      requestedOn: new Date().toISOString().split('T')[0],
-    };
-    setRequestsList(prev => [newReq, ...prev]);
-    setNewRequestModal(false);
+    setModalError('');
+    if (!newReqEmployee || !newReqType || !newReqStart || !newReqEnd) {
+      setModalError('All fields are required.');
+      return;
+    }
+
+    setSubmittingReq(true);
+    try {
+      await timeoffApi.createRequest({
+        employeeId: newReqEmployee,
+        typeId: newReqType,
+        startDate: newReqStart,
+        endDate: newReqEnd,
+        duration: calculatedDuration,
+      });
+      setNewRequestModal(false);
+      loadData();
+    } catch (err) {
+      setModalError(err.message || 'Failed to submit time off request');
+    } finally {
+      setSubmittingReq(false);
+    }
   };
 
   const filteredRequests = useMemo(() => {
     return requestsList.filter(req => {
-      const emp = employees.find(e => e.id === req.employeeId);
       const matchesSearch = !search || 
-        (emp && emp.fullName.toLowerCase().includes(search.toLowerCase())) ||
-        req.reason?.toLowerCase().includes(search.toLowerCase());
+        (req.employeeName && req.employeeName.toLowerCase().includes(search.toLowerCase())) ||
+        (req.leaveTypeName && req.leaveTypeName.toLowerCase().includes(search.toLowerCase()));
       const matchesEmp = employeeFilter === 'all' || req.employeeId === employeeFilter;
       const matchesStatus = statusFilter === 'all' || req.status?.toLowerCase() === statusFilter.toLowerCase();
       return matchesSearch && matchesEmp && matchesStatus;
@@ -113,24 +186,18 @@ export function TimeOffList() {
   }, [allocationsList, employeeFilter]);
 
   const requestColumns = [
-    { key: 'employee', header: 'Employee', width: '200px', render: (row) => {
-      const emp = employees.find(e => e.id === row.employeeId);
-      return emp ? (
-        <div className="flex items-center gap-3">
-          <Avatar name={emp.fullName} size="sm" />
-          <span className="font-semibold text-gray-900">{emp.fullName}</span>
-        </div>
-      ) : '—';
-    }},
-    { key: 'type', header: 'Type', width: '150px', render: (row) => {
-      const type = typesList.find(t => t.id === row.leaveTypeId);
-      return type ? (
-        <span className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: type.color || '#16a34a' }}></span>
-          <span className="text-sm font-medium text-gray-800">{type.name}</span>
-        </span>
-      ) : row.leaveTypeId;
-    }},
+    { key: 'employee', header: 'Employee', width: '200px', render: (row) => (
+      <div className="flex items-center gap-3">
+        <Avatar name={row.employeeName} size="sm" />
+        <span className="font-semibold text-gray-900">{row.employeeName}</span>
+      </div>
+    )},
+    { key: 'type', header: 'Type', width: '150px', render: (row) => (
+      <span className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-accent-500"></span>
+        <span className="text-sm font-medium text-gray-800">{row.leaveTypeName}</span>
+      </span>
+    )},
     { key: 'from', header: 'From', width: '110px', render: (row) => formatDate(row.fromDate) },
     { key: 'to', header: 'To', width: '110px', render: (row) => formatDate(row.toDate) },
     { key: 'duration', header: 'Duration', width: '100px', render: (row) => <span className="font-medium text-gray-900">{row.duration}</span> },
@@ -145,74 +212,38 @@ export function TimeOffList() {
             <Button variant="danger" size="sm" onClick={() => handleRefuseRequest(row.id)}>Refuse</Button>
           </>
         ) : (
-          <span className="text-xs text-gray-400">Completed</span>
+          <span className="text-xs text-gray-400">Processed</span>
         )}
       </div>
     )},
   ];
 
   const allocationColumns = [
-    { key: 'employee', header: 'Employee', width: '200px', render: (row) => {
-      const emp = employees.find(e => e.id === row.employeeId);
-      return emp ? (
-        <div className="flex items-center gap-3">
-          <Avatar name={emp.fullName} size="sm" />
-          <span className="font-semibold text-gray-900">{emp.fullName}</span>
-        </div>
-      ) : '—';
-    }},
-    { key: 'type', header: 'Type', width: '150px', render: (row) => {
-      const type = typesList.find(t => t.id === row.leaveTypeId);
-      return type ? (
-        <span className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: type.color || '#16a34a' }}></span>
-          <span className="text-sm font-medium text-gray-800">{type.name}</span>
-        </span>
-      ) : row.leaveTypeId;
-    }},
-    { key: 'allocated', header: 'Allocated', width: '100px', render: (row) => `${row.allocated} days` },
-    { key: 'taken', header: 'Taken', width: '90px', render: (row) => `${row.taken} days` },
+    { key: 'employee', header: 'Employee', width: '200px', render: (row) => (
+      <div className="flex items-center gap-3">
+        <Avatar name={row.employeeName} size="sm" />
+        <span className="font-semibold text-gray-900">{row.employeeName}</span>
+      </div>
+    )},
+    { key: 'type', header: 'Leave Type', width: '160px', render: (row) => (
+      <span className="text-sm font-medium text-gray-800">{row.leaveTypeName}</span>
+    )},
+    { key: 'allocated', header: 'Allocated', width: '100px', render: (row) => (
+      <span className="font-semibold text-gray-900">{row.allocated} days</span>
+    )},
+    { key: 'taken', header: 'Taken', width: '100px', render: (row) => (
+      <span className="text-gray-600">{row.taken} days</span>
+    )},
     { key: 'remaining', header: 'Remaining', width: '110px', render: (row) => (
-      // ponytail: read directly from response field as specified in contract, do not compute client side
-      <Badge variant={row.remaining > 5 ? 'success' : row.remaining > 0 ? 'warning' : 'gray'}>
-        {row.remaining} days left
-      </Badge>
+      <Badge variant={row.remaining > 5 ? 'success' : 'warning'}>{row.remaining} days</Badge>
     )},
-    { key: 'validFrom', header: 'Valid From', width: '110px', render: (row) => formatDate(row.validFrom) },
-    { key: 'validUntil', header: 'Valid To', width: '110px', render: (row) => formatDate(row.validUntil) },
-    { key: 'approved', header: 'Approved', width: '110px', render: (row) => (
-      <Badge variant={row.approved ? 'success' : 'warning'}>{row.approved ? 'Approved' : 'Pending'}</Badge>
+    { key: 'status', header: 'Status', width: '110px', render: (row) => (
+      <Badge variant={row.approved ? 'success' : 'warning'}>{row.status}</Badge>
     )},
-    { key: 'actions', header: 'Actions', width: '140px', render: (row) => (
-      <div>
-        {!row.approved && (
-          <Button variant="success" size="sm" onClick={() => handleApproveAllocation(row.id)}>
-            Approve Allocation
-          </Button>
-        )}
-      </div>
-    )},
-  ];
-
-  const typeColumns = [
-    { key: 'name', header: 'Name', width: '220px', render: (row) => (
-      <div className="flex items-center gap-2">
-        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: row.color }}></span>
-        <span className="font-semibold text-gray-900">{row.name} ({row.code})</span>
-      </div>
-    )},
-    { key: 'unit', header: 'Unit', width: '120px', render: (row) => <Badge variant="gray">{row.unit}</Badge> },
-    { key: 'requiresAllocation', header: 'Requires Allocation', width: '160px', render: (row) => (
-      <Badge variant={row.requiresAllocation ? 'primary' : 'gray'}>{row.requiresAllocation ? 'Yes' : 'No'}</Badge>
-    )},
-    { key: 'payrollImpact', header: 'Payroll Integrated', width: '160px', render: (row) => (
-      <Badge variant={row.payrollImpact === 'Paid' ? 'success' : 'warning'}>{row.payrollImpact === 'Paid' ? 'Yes (Paid)' : 'Unpaid'}</Badge>
-    )},
-    { key: 'maxPerYear', header: 'Max / Year', width: '120px', render: (row) => `${row.maxPerYear} ${row.unit}` },
   ];
 
   return (
-    <div className="space-y-6" data-testid="timeoff-page">
+    <div className="space-y-6" data-testid="timeoff-list-page">
       <Breadcrumb items={[
         { label: 'Home', href: '/' },
         { label: 'Time Off' },
@@ -220,159 +251,133 @@ export function TimeOffList() {
 
       <PageHeader
         title="Time Off & Leaves"
-        subtitle="Manage leave requests, department allocations, and leave policy types"
+        subtitle="Manage employee leave requests, balances, and yearly leave allocations"
         actions={
-          <Button variant="primary" onClick={() => setNewRequestModal(true)}>
-            + New Request
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="primary" onClick={() => setNewRequestModal(true)}>
+              + Request Time Off
+            </Button>
+          </div>
         }
       />
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 pb-2">
-        {[
-          { id: 'requests', label: 'Time Off Requests', count: filteredRequests.length },
-          { id: 'allocations', label: 'Allocations & Balances', count: filteredAllocations.length },
-          { id: 'types', label: 'Time Off Types', count: typesList.length },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setCurrentTab(tab.id);
-              setSearchParams(prev => { prev.set('tab', tab.id); return prev; });
-            }}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              currentTab === tab.id
-                ? 'bg-ink-900 text-white'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-cream'
-            }`}
-          >
-            {tab.label} <span className="ml-1 text-xs opacity-75">({tab.count})</span>
-          </button>
-        ))}
+      <div className="flex items-center gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setCurrentTab('requests')}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
+            currentTab === 'requests'
+              ? 'border-ink-900 text-ink-900'
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          Leave Requests ({requestsList.length})
+        </button>
+        <button
+          onClick={() => setCurrentTab('allocations')}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
+            currentTab === 'allocations'
+              ? 'border-ink-900 text-ink-900'
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          Leave Allocations ({allocationsList.length})
+        </button>
       </div>
 
-      {currentTab === 'requests' && (
-        <div className="space-y-4">
-          <div className="filter-bar">
-            <Input 
-              placeholder="Search employee or reason..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-              className="w-64" 
-            />
-            <Select 
-              value={employeeFilter} 
-              onChange={(e) => setEmployeeFilter(e.target.value)} 
-              options={[{ value: 'all', label: 'All Employees ▾' }, ...employees.map(e => ({ value: e.id, label: e.fullName }))]} 
-              className="w-48" 
-            />
-            <Select 
-              value={statusFilter} 
-              onChange={(e) => setStatusFilter(e.target.value)} 
-              options={[
-                { value: 'all', label: 'All Statuses ▾' },
-                { value: 'pending', label: 'Pending' },
-                { value: 'approved', label: 'Approved' },
-                { value: 'refused', label: 'Refused' },
-              ]} 
-              className="w-40" 
-            />
-          </div>
+      <div className="filter-bar">
+        <Input
+          placeholder="Search time off records..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-64"
+        />
+        <Select
+          label="Employee"
+          value={employeeFilter}
+          onChange={(e) => setEmployeeFilter(e.target.value)}
+          options={[{ value: 'all', label: 'All Employees' }, ...employeesList.map(e => ({ value: e.id, label: e.name }))]}
+          className="w-52"
+        />
+        {currentTab === 'requests' && (
+          <Select
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'Pending', label: 'Pending' },
+              { value: 'Approved', label: 'Approved' },
+              { value: 'Refused', label: 'Refused' },
+            ]}
+            className="w-40"
+          />
+        )}
+      </div>
 
-          <Card>
-            <CardBody className="p-0">
-              <Table
-                columns={requestColumns}
-                data={filteredRequests}
-                keyField="id"
-                emptyMessage="No time off requests found"
+      <Card>
+        <CardBody className="p-0">
+          <Table
+            columns={currentTab === 'requests' ? requestColumns : allocationColumns}
+            data={currentTab === 'requests' ? filteredRequests : filteredAllocations}
+            keyField="id"
+            emptyMessage={loading ? "Loading time off records..." : "No time off records found"}
+          />
+        </CardBody>
+      </Card>
+
+      {newRequestModal && (
+        <Modal
+          isOpen={newRequestModal}
+          onClose={() => setNewRequestModal(false)}
+          title="New Time Off Request"
+        >
+          <form onSubmit={handleCreateRequest} className="space-y-4">
+            {modalError && (
+              <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
+                {modalError}
+              </div>
+            )}
+            <Select
+              label="Employee *"
+              value={newReqEmployee}
+              onChange={(e) => setNewReqEmployee(e.target.value)}
+              options={employeesList.map(e => ({ value: e.id, label: e.name }))}
+              required
+            />
+            <Select
+              label="Time Off Type *"
+              value={newReqType}
+              onChange={(e) => setNewReqType(e.target.value)}
+              options={typesList.map(t => ({ value: t.id, label: t.name }))}
+              required
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Start Date *"
+                type="date"
+                value={newReqStart}
+                onChange={(e) => setNewReqStart(e.target.value)}
+                required
               />
-            </CardBody>
-          </Card>
-        </div>
+              <Input
+                label="End Date *"
+                type="date"
+                value={newReqEnd}
+                onChange={(e) => setNewReqEnd(e.target.value)}
+                required
+              />
+            </div>
+            <div className="p-3 bg-cream rounded-xl text-xs flex justify-between">
+              <span className="text-gray-600">Calculated Duration:</span>
+              <span className="font-semibold text-gray-900">{calculatedDuration} days</span>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => setNewRequestModal(false)}>Cancel</Button>
+              <Button variant="primary" type="submit" loading={submittingReq}>Submit Request</Button>
+            </div>
+          </form>
+        </Modal>
       )}
-
-      {currentTab === 'allocations' && (
-        <Card>
-          <CardBody className="p-0">
-            <Table
-              columns={allocationColumns}
-              data={filteredAllocations}
-              keyField="id"
-              emptyMessage="No allocations found"
-            />
-          </CardBody>
-        </Card>
-      )}
-
-      {currentTab === 'types' && (
-        <Card>
-          <CardBody className="p-0">
-            <Table
-              columns={typeColumns}
-              data={typesList}
-              keyField="id"
-              emptyMessage="No leave types found"
-            />
-          </CardBody>
-        </Card>
-      )}
-
-      {/* New Request Modal with duration auto-calc */}
-      <Modal
-        isOpen={newRequestModal}
-        onClose={() => setNewRequestModal(false)}
-        title="Submit Time Off Request"
-        size="md"
-      >
-        <form onSubmit={handleCreateRequest} className="space-y-4">
-          <Select
-            label="Employee *"
-            value={newReqEmployee}
-            onChange={(e) => setNewReqEmployee(e.target.value)}
-            options={employees.map(e => ({ value: e.id, label: `${e.fullName} (${e.employeeId})` }))}
-            required
-          />
-          <Select
-            label="Time Off Type *"
-            value={newReqType}
-            onChange={(e) => setNewReqType(e.target.value)}
-            options={typesList.map(t => ({ value: t.id, label: `${t.name} (${t.unit})` }))}
-            required
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Start Date *"
-              type="date"
-              value={newReqStart}
-              onChange={(e) => setNewReqStart(e.target.value)}
-              required
-            />
-            <Input
-              label="End Date *"
-              type="date"
-              value={newReqEnd}
-              onChange={(e) => setNewReqEnd(e.target.value)}
-              required
-            />
-          </div>
-          <div className="p-3 bg-cream rounded-xl flex items-center justify-between text-sm">
-            <span className="text-gray-600">Calculated Duration:</span>
-            <span className="font-bold text-gray-900">{calculatedDuration}</span>
-          </div>
-          <Input
-            label="Reason"
-            value={newReqReason}
-            onChange={(e) => setNewReqReason(e.target.value)}
-            placeholder="Brief reason for time off"
-          />
-          <div className="modal-footer pt-4">
-            <Button variant="secondary" onClick={() => setNewRequestModal(false)}>Cancel</Button>
-            <Button variant="primary" type="submit">Submit Request</Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

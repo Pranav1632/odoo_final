@@ -1,136 +1,86 @@
 // src/pages/AuditLog.jsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Card, CardBody, PageHeader, Button, Badge, Input, Select, Table, Breadcrumb 
 } from '../components/UI';
-import { employees } from '../data/mockData';
-
-const MOCK_AUDIT_LOGS = [
-  {
-    id: 'log-001',
-    timestamp: '2026-08-15 14:32:10',
-    userName: 'Emily Rodriguez',
-    userId: 'emp-003',
-    action: 'PAYRUN_VALIDATE',
-    entityType: 'Payrun',
-    entityId: 'pr-001',
-    details: { payrunName: 'August 2025 Payroll', totalNet: 485000, payslipCount: 8, status: 'Validated' }
-  },
-  {
-    id: 'log-002',
-    timestamp: '2026-08-15 11:20:45',
-    userName: 'Lisa Wang',
-    userId: 'emp-005',
-    action: 'CONTRACT_ACTIVATE',
-    entityType: 'Contract',
-    entityId: 'ctr-001',
-    details: { employeeId: 'emp-001', wage: 120000, structure: 'REG-SAL', previousStatus: 'Draft' }
-  },
-  {
-    id: 'log-003',
-    timestamp: '2026-08-14 16:05:12',
-    userName: 'Emily Rodriguez',
-    userId: 'emp-003',
-    action: 'TIMEOFF_APPROVE',
-    entityType: 'TimeOffRequest',
-    entityId: 'tor-001',
-    details: { employeeId: 'emp-001', leaveType: 'Annual Leave', duration: '5 days', approvedBy: 'emp-003' }
-  },
-  {
-    id: 'log-004',
-    timestamp: '2026-08-12 09:14:02',
-    userName: 'Sarah Chen',
-    userId: 'emp-001',
-    action: 'BANK_ACCOUNT_UPDATE',
-    entityType: 'Employee',
-    entityId: 'emp-001',
-    details: { field: 'bankAccountNumber', masked: '****1234', bankName: 'Chase Bank' }
-  },
-  {
-    id: 'log-005',
-    timestamp: '2026-08-10 13:45:00',
-    userName: 'Maria Garcia',
-    userId: 'emp-007',
-    action: 'SALARY_RULE_CREATE',
-    entityType: 'SalaryRule',
-    entityId: 'rule-006',
-    details: { code: 'PT', category: 'Deduction', method: 'fixed', amount: 200 }
-  },
-  {
-    id: 'log-006',
-    timestamp: '2026-08-01 08:30:00',
-    userName: 'System',
-    userId: 'sys-001',
-    action: 'PAYRUN_COMPUTE',
-    entityType: 'Payrun',
-    entityId: 'pr-001',
-    details: { durationMs: 420, warningsFound: 3, computedPayslips: 8 }
-  }
-];
-
-const MOCK_ERROR_LOGS = [
-  {
-    id: 'err-001',
-    timestamp: '2026-08-15 14:30:12',
-    endpoint: '/api/payruns/pr-001/compute',
-    statusCode: 400,
-    message: 'Rule HRA: formula produced non-finite value',
-    userId: 'emp-003',
-    stack: 'Error: Cannot divide by zero at computeSalaryRules (computeRules.ts:104)'
-  },
-  {
-    id: 'err-002',
-    timestamp: '2026-08-14 09:12:44',
-    endpoint: '/api/timeoff/requests/tor-002/approve',
-    statusCode: 400,
-    message: 'Insufficient balance. Requested 5, remaining 2',
-    userId: 'emp-003',
-    stack: 'ApiError: Insufficient balance at PATCH /api/timeoff/requests/:id/approve'
-  },
-  {
-    id: 'err-003',
-    timestamp: '2026-08-12 18:22:01',
-    endpoint: '/api/contracts',
-    statusCode: 409,
-    message: 'Employee already has an active contract. Expire the existing one first.',
-    userId: 'emp-005',
-    stack: 'ApiError: Duplicate active contract conflict'
-  }
-];
+import { systemLogsApi } from '../lib/api';
 
 export function AuditLog() {
   const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'error'
   const [userFilter, setUserFilter] = useState('all');
   const [entityFilter, setEntityFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [auditLogsList, setAuditLogsList] = useState([]);
+  const [errorLogsList, setErrorLogsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      systemLogsApi.getAuditLogs().catch(() => ({ data: [] })),
+      systemLogsApi.getErrorLogs().catch(() => ({ data: [] })),
+    ]).then(([auditRes, errorRes]) => {
+      if (!isMounted) return;
+      const aLogs = auditRes.data || (Array.isArray(auditRes) ? auditRes : []);
+      if (Array.isArray(aLogs)) {
+        setAuditLogsList(aLogs.map(l => ({
+          id: l.id,
+          timestamp: l.createdAt ? new Date(l.createdAt).toLocaleString() : 'Recent',
+          userName: l.userId || 'System',
+          userId: l.userId,
+          action: l.action,
+          entityType: l.entityType,
+          entityId: l.entityId,
+          details: typeof l.details === 'string' ? JSON.parse(l.details || '{}') : (l.details || {}),
+        })));
+      }
+      const eLogs = errorRes.data || (Array.isArray(errorRes) ? errorRes : []);
+      if (Array.isArray(eLogs)) {
+        setErrorLogsList(eLogs.map(e => ({
+          id: e.id,
+          timestamp: e.createdAt ? new Date(e.createdAt).toLocaleString() : 'Recent',
+          endpoint: e.route,
+          statusCode: 500,
+          message: e.message,
+          userId: e.userId || 'Unknown',
+          stack: e.stack || '',
+        })));
+      }
+    }).finally(() => {
+      if (isMounted) setLoading(false);
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   const users = useMemo(() => {
-    return ['all', ...Array.from(new Set(MOCK_AUDIT_LOGS.map(l => l.userName)))];
-  }, []);
+    return ['all', ...Array.from(new Set(auditLogsList.map(l => l.userName).filter(Boolean)))];
+  }, [auditLogsList]);
 
   const entityTypes = useMemo(() => {
-    return ['all', ...Array.from(new Set(MOCK_AUDIT_LOGS.map(l => l.entityType)))];
-  }, []);
+    return ['all', ...Array.from(new Set(auditLogsList.map(l => l.entityType).filter(Boolean)))];
+  }, [auditLogsList]);
 
   const filteredLogs = useMemo(() => {
-    return MOCK_AUDIT_LOGS.filter(log => {
+    return auditLogsList.filter(log => {
       const matchUser = userFilter === 'all' || log.userName === userFilter;
       const matchEntity = entityFilter === 'all' || log.entityType === entityFilter;
       const matchSearch = !search || 
-        log.action.toLowerCase().includes(search.toLowerCase()) ||
-        log.entityId.toLowerCase().includes(search.toLowerCase()) ||
-        log.userName.toLowerCase().includes(search.toLowerCase());
+        (log.userName && log.userName.toLowerCase().includes(search.toLowerCase())) ||
+        (log.action && log.action.toLowerCase().includes(search.toLowerCase())) ||
+        (log.entityType && log.entityType.toLowerCase().includes(search.toLowerCase())) ||
+        (log.entityId && log.entityId.toLowerCase().includes(search.toLowerCase()));
       return matchUser && matchEntity && matchSearch;
     });
-  }, [userFilter, entityFilter, search]);
+  }, [auditLogsList, userFilter, entityFilter, search]);
 
-  const filteredErrorLogs = useMemo(() => {
-    return MOCK_ERROR_LOGS.filter(err => {
-      return !search || 
-        err.endpoint.toLowerCase().includes(search.toLowerCase()) ||
-        err.message.toLowerCase().includes(search.toLowerCase());
+  const filteredErrors = useMemo(() => {
+    return errorLogsList.filter(err => {
+      const matchSearch = !search || 
+        (err.endpoint && err.endpoint.toLowerCase().includes(search.toLowerCase())) ||
+        (err.message && err.message.toLowerCase().includes(search.toLowerCase()));
+      return matchSearch;
     });
-  }, [search]);
+  }, [errorLogsList, search]);
 
   const columns = [
     { key: 'timestamp', header: 'Timestamp', width: '160px', render: (row) => (
@@ -207,7 +157,7 @@ export function AuditLog() {
               : 'border-transparent text-gray-500 hover:text-gray-800'
           }`}
         >
-          📋 Audit Trail ({MOCK_AUDIT_LOGS.length})
+          📋 Audit Trail ({auditLogsList.length})
         </button>
         <button
           onClick={() => setActiveTab('error')}
@@ -217,7 +167,7 @@ export function AuditLog() {
               : 'border-transparent text-gray-500 hover:text-gray-800'
           }`}
         >
-          ⚠️ Error Log ({MOCK_ERROR_LOGS.length})
+          ⚠️ Error Log ({errorLogsList.length})
         </button>
       </div>
 
@@ -257,9 +207,9 @@ export function AuditLog() {
         <CardBody className="p-0">
           <Table
             columns={activeTab === 'audit' ? columns : errorColumns}
-            data={activeTab === 'audit' ? filteredLogs : filteredErrorLogs}
+            data={activeTab === 'audit' ? filteredLogs : filteredErrors}
             keyField="id"
-            emptyMessage={activeTab === 'audit' ? "No audit log entries found" : "No system errors logged"}
+            emptyMessage={loading ? "Loading system logs..." : (activeTab === 'audit' ? "No audit log entries found" : "No system errors logged")}
           />
         </CardBody>
       </Card>
