@@ -5,8 +5,12 @@ import {
 } from '../components/UI';
 import { payslipsApi } from '../lib/api';
 
+import { getSession } from '../lib/user';
+
 export function PayslipsList() {
   const navigate = useNavigate();
+  const session = getSession();
+  const isEmployee = session?.role === 'EMPLOYEE';
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
@@ -19,7 +23,12 @@ export function PayslipsList() {
       .then(data => {
         if (!isMounted) return;
         if (Array.isArray(data)) {
-          setPayslipList(data.map(ps => ({
+          let list = data;
+          // Scope to current employee if logged in as EMPLOYEE
+          if (isEmployee && session?.employeeId) {
+            list = list.filter(ps => ps.employeeId === session.employeeId);
+          }
+          setPayslipList(list.map(ps => ({
             id: ps.id,
             employeeId: ps.employeeId,
             employeeName: ps.employee?.name || 'Employee',
@@ -42,7 +51,7 @@ export function PayslipsList() {
         if (isMounted) setLoading(false);
       });
     return () => { isMounted = false; };
-  }, []);
+  }, [isEmployee, session?.employeeId]);
 
   const filteredPayslips = useMemo(() => {
     return payslipList.filter(ps => {
@@ -104,8 +113,8 @@ export function PayslipsList() {
       ]} />
 
       <PageHeader
-        title="Employee Payslips"
-        subtitle="Individual computed payslips, line breakdown, and PDF download generation"
+        title={isEmployee ? "My Payslips" : "Employee Payslips"}
+        subtitle={isEmployee ? "View and download your monthly salary statements and PDF breakdown" : "Individual computed payslips, line breakdown, and PDF download generation"}
       />
 
       <div className="filter-bar">

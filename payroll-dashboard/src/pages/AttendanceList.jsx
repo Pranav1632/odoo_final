@@ -7,6 +7,7 @@ import {
 } from '../components/UI';
 import { formatDate, getStatusColor } from '../lib/formatters';
 import { attendanceApi, employeesApi } from '../lib/api';
+import { getSession } from '../lib/user';
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses ▾' },
@@ -19,6 +20,10 @@ const statusOptions = [
 
 export function AttendanceList() {
   const navigate = useNavigate();
+  const session = getSession();
+  const isEmployee = session?.role === 'EMPLOYEE';
+  const canManageAttendance = session?.role === 'HR_MANAGER' || session?.role === 'ADMIN';
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const employeeParam = searchParams.get('employeeId') || searchParams.get('employee') || 'all';
@@ -40,7 +45,11 @@ export function AttendanceList() {
       employeesApi.getAll().catch(() => []),
     ]).then(([attData, empData]) => {
       if (Array.isArray(attData)) {
-        setRecords(attData.map(a => ({
+        let list = attData;
+        if (isEmployee && session?.employeeId) {
+          list = list.filter(a => a.employeeId === session.employeeId);
+        }
+        setRecords(list.map(a => ({
           id: a.id,
           employeeId: a.employeeId,
           employeeName: a.employee?.name || 'Employee',
@@ -127,38 +136,45 @@ export function AttendanceList() {
         </div>
       );
     }},
-    { key: 'actions', header: 'Actions', width: '100px', render: (row) => (
-      <Button variant="ghost" size="sm" onClick={() => handleEditClick(row)}>
-        Edit
-      </Button>
-    )},
+    ...(canManageAttendance ? [{
+      key: 'actions', 
+      header: 'Actions', 
+      width: '100px', 
+      render: (row) => (
+        <Button variant="ghost" size="sm" onClick={() => handleEditClick(row)}>
+          Edit
+        </Button>
+      )
+    }] : []),
   ];
 
   return (
     <div className="space-y-6" data-testid="attendance-list-page">
       <Breadcrumb items={[
         { label: 'Home', href: '/' },
-        { label: 'Attendance' },
+        { label: isEmployee ? 'My Attendance' : 'Attendance' },
       ]} />
 
       <PageHeader
-        title="Attendance Records"
-        subtitle={`Tracking ${records.length} real-time attendance logs and check-in variances`}
+        title={isEmployee ? "My Attendance Records" : "Attendance Records"}
+        subtitle={isEmployee ? "Your daily check-in, check-out, and tracked hours" : `Tracking ${records.length} real-time attendance logs and check-in variances`}
       />
 
       <div className="filter-bar">
         <Input 
-          placeholder="Search by employee..." 
+          placeholder="Search by date or status..." 
           value={search} 
           onChange={(e) => setSearch(e.target.value)} 
           className="w-64" 
         />
-        <Select 
-          value={employeeFilter} 
-          onChange={(e) => { setEmployeeFilter(e.target.value); setSearchParams(prev => { prev.set('employeeId', e.target.value); return prev; }); }} 
-          options={[{ value: 'all', label: 'All Employees ▾' }, ...employeesList.map(e => ({ value: e.id, label: e.name }))]} 
-          className="w-48" 
-        />
+        {!isEmployee && (
+          <Select 
+            value={employeeFilter} 
+            onChange={(e) => { setEmployeeFilter(e.target.value); setSearchParams(prev => { prev.set('employeeId', e.target.value); return prev; }); }} 
+            options={[{ value: 'all', label: 'All Employees ▾' }, ...employeesList.map(e => ({ value: e.id, label: e.name }))]} 
+            className="w-48" 
+          />
+        )}
         <Select 
           value={statusFilter} 
           onChange={(e) => setStatusFilter(e.target.value)} 

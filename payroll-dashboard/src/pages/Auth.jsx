@@ -8,9 +8,9 @@ function formatRoleName(role) {
   if (!role) return '';
   const specialNames = {
     ADMIN: 'Admin',
-    HR_PAYROLL_MANAGER: 'Hr Payroll Manager',
-    HR_PAYROLL_USER: 'Hr Payroll User',
-    HR_MANAGER: 'Hr Manager',
+    HR_PAYROLL_MANAGER: 'HR Payroll Manager',
+    HR_PAYROLL_USER: 'HR Payroll User',
+    HR_MANAGER: 'HR Manager',
     EMPLOYEE: 'Employee',
   };
   if (specialNames[role]) return specialNames[role];

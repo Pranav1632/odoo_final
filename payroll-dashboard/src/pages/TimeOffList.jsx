@@ -12,6 +12,8 @@ import { timeoffApi, employeesApi } from '../lib/api';
 export function TimeOffList() {
   const navigate = useNavigate();
   const session = getSession();
+  const isEmployee = session?.role === 'EMPLOYEE';
+  const canApproveTimeOff = session?.role === 'HR_MANAGER' || session?.role === 'ADMIN';
   const [searchParams, setSearchParams] = useSearchParams();
   
   const initialTab = searchParams.get('tab') || 'requests';
@@ -40,7 +42,11 @@ export function TimeOffList() {
       employeesApi.getAll().catch(() => []),
     ]).then(([reqData, allocData, typeData, empData]) => {
       if (Array.isArray(reqData)) {
-        setRequestsList(reqData.map(r => ({
+        let reqs = reqData;
+        if (isEmployee && session?.employeeId) {
+          reqs = reqs.filter(r => r.employeeId === session.employeeId);
+        }
+        setRequestsList(reqs.map(r => ({
           id: r.id,
           employeeId: r.employeeId,
           employeeName: r.employee?.name || 'Employee',
@@ -55,7 +61,11 @@ export function TimeOffList() {
         })));
       }
       if (Array.isArray(allocData)) {
-        setAllocationsList(allocData.map(a => ({
+        let allocs = allocData;
+        if (isEmployee && session?.employeeId) {
+          allocs = allocs.filter(a => a.employeeId === session.employeeId);
+        }
+        setAllocationsList(allocs.map(a => ({
           id: a.id,
           employeeId: a.employeeId,
           employeeName: a.employee?.name || 'Employee',
@@ -212,18 +222,23 @@ export function TimeOffList() {
     { key: 'status', header: 'Status', width: '110px', render: (row) => (
       <Badge variant={getStatusColor(row.status)}>{row.status}</Badge>
     )},
-    { key: 'actions', header: 'Actions', width: '160px', render: (row) => (
-      <div className="flex items-center gap-1">
-        {row.status === 'Pending' ? (
-          <>
-            <Button variant="success" size="sm" onClick={() => handleApproveRequest(row.id)}>Approve</Button>
-            <Button variant="danger" size="sm" onClick={() => handleRefuseRequest(row.id)}>Refuse</Button>
-          </>
-        ) : (
-          <span className="text-xs text-gray-400">Processed</span>
-        )}
-      </div>
-    )},
+    ...(canApproveTimeOff ? [{
+      key: 'actions', 
+      header: 'Actions', 
+      width: '160px', 
+      render: (row) => (
+        <div className="flex items-center gap-1">
+          {row.status === 'Pending' ? (
+            <>
+              <Button variant="success" size="sm" onClick={() => handleApproveRequest(row.id)}>Approve</Button>
+              <Button variant="danger" size="sm" onClick={() => handleRefuseRequest(row.id)}>Refuse</Button>
+            </>
+          ) : (
+            <span className="text-xs text-gray-400">Processed</span>
+          )}
+        </div>
+      )
+    }] : []),
   ];
 
   const allocationColumns = [
@@ -254,12 +269,12 @@ export function TimeOffList() {
     <div className="space-y-6" data-testid="timeoff-list-page">
       <Breadcrumb items={[
         { label: 'Home', href: '/' },
-        { label: 'Time Off' },
+        { label: isEmployee ? 'My Time Off' : 'Time Off' },
       ]} />
 
       <PageHeader
-        title="Time Off & Leaves"
-        subtitle="Manage employee leave requests, balances, and yearly leave allocations"
+        title={isEmployee ? "My Time Off & Leaves" : "Time Off & Leaves"}
+        subtitle={isEmployee ? "Your leave requests, balances, and allocations" : "Manage employee leave requests, balances, and yearly leave allocations"}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="primary" onClick={() => setNewRequestModal(true)}>

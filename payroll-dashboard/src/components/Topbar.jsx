@@ -3,16 +3,17 @@ import { useState, useRef, useEffect } from 'react';
 import { Avatar, Dropdown } from './UI';
 
 const ALL_NAV_ITEMS = [
-  { id: 'dashboard', label: 'Reports', href: '/', roles: ['ALL'] },
-  { id: 'employees', label: 'Employees', href: '/employees', roles: ['ALL'] },
+  { id: 'profile', label: 'My Profile', href: '/', roles: ['EMPLOYEE'] },
+  { id: 'dashboard', label: 'Reports', href: '/', roles: ['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'] },
+  { id: 'employees', label: 'Employees', href: '/employees', roles: ['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'] },
   { id: 'contracts', label: 'Contracts', href: '/contracts', roles: ['ALL'] },
-  { id: 'schedules', label: 'Schedules', href: '/schedules', roles: ['ALL'] },
+  { id: 'schedules', label: 'Schedules', href: '/schedules', roles: ['HR_MANAGER', 'ADMIN'] },
   { id: 'attendance', label: 'Attendance', href: '/attendance', roles: ['ALL'] },
   { id: 'timeoff', label: 'Time Off', href: '/time-off', roles: ['ALL'] },
   { id: 'payroll', label: 'Payroll', href: '/payroll/payruns', roles: ['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'] },
   { id: 'payslips', label: 'Payslips', href: '/payslips', roles: ['ALL'] },
-  { id: 'structures', label: 'Salary Structures', href: '/salary-structures', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'] },
-  { id: 'audit', label: 'Audit Log', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'] },
+  { id: 'structures', label: 'Salary Structures', href: '/salary-structures', roles: ['HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'] },
+  { id: 'audit', label: 'System Logs', href: '/audit-log', roles: ['HR_PAYROLL_MANAGER', 'ADMIN'] },
   { id: 'users', label: 'User Management', href: '/users', roles: ['ADMIN'] },
 ];
 
@@ -101,7 +102,6 @@ export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {
             >
               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               <span className="text-xs text-gray-500 font-medium">Search employees, contracts, payruns…</span>
-              <kbd className="ml-auto text-[10px] font-semibold text-gray-500 bg-white rounded-md px-1.5 py-0.5 border border-gray-200 shadow-2xs">⌘K</kbd>
             </button>
             {searchOpen && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-3xl shadow-xl border border-gray-100 animate-scale-in z-50 overflow-hidden">
@@ -121,14 +121,16 @@ export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {
 
         {/* Right Header Utilities: Quick Actions + Notifications + Profile */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Quick Payrun Shortcut */}
-          <button
-            onClick={() => onNavigate('/payroll/payruns/new')}
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent-50 text-accent-700 hover:bg-accent-100 transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            <span>New Payrun</span>
-          </button>
+          {/* Quick Payrun Shortcut - only for Payroll Managers & Admins */}
+          {(user?.role === 'HR_PAYROLL_MANAGER' || user?.role === 'ADMIN' || user?.role === 'HR_PAYROLL_USER') && (
+            <button
+              onClick={() => onNavigate('/payroll/payruns/new')}
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-accent-50 text-accent-700 hover:bg-accent-100 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              <span>New Payrun</span>
+            </button>
+          )}
 
           {/* Notifications */}
           <div className="relative" ref={notifRef}>

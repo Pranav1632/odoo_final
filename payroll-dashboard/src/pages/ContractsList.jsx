@@ -6,7 +6,7 @@ import {
 } from '../components/UI';
 import { formatDate, getStatusColor } from '../lib/formatters';
 import { contractsApi, employeesApi } from '../lib/api';
-
+import { getSession } from '../lib/user';
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses' },
@@ -17,6 +17,10 @@ const statusOptions = [
 
 export function ContractsList() {
   const navigate = useNavigate();
+  const session = getSession();
+  const isEmployee = session?.role === 'EMPLOYEE';
+  const canManageContracts = session?.role === 'HR_MANAGER' || session?.role === 'HR_PAYROLL_MANAGER' || session?.role === 'ADMIN';
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const employeeParam = searchParams.get('employeeId') || searchParams.get('employee') || 'all';
@@ -40,7 +44,10 @@ export function ContractsList() {
     ])
       .then(([contractsData, employeesData]) => {
         if (!isMounted) return;
-        const list = Array.isArray(contractsData) ? contractsData : [];
+        let list = Array.isArray(contractsData) ? contractsData : [];
+        if (isEmployee && session?.employeeId) {
+          list = list.filter(c => c.employeeId === session.employeeId);
+        }
         const mapped = list.map((c) => ({
           id: c.id,
           contractId: c.id,
@@ -69,7 +76,7 @@ export function ContractsList() {
       });
 
     return () => { isMounted = false; };
-  }, []);
+  }, [isEmployee, session?.employeeId]);
 
 
   const filteredContracts = useMemo(() => {
@@ -142,7 +149,7 @@ export function ContractsList() {
     )},
     { key: 'actions', header: 'Actions', width: '100px', render: (row) => (
       <Button variant="ghost" size="sm" onClick={() => navigate(`/contracts/${row.id}`)}>
-        Edit
+        {canManageContracts ? 'Edit' : 'View'}
       </Button>
     )},
   ];
@@ -151,16 +158,18 @@ export function ContractsList() {
     <div className="space-y-6" data-testid="contracts-list-page">
       <Breadcrumb items={[
         { label: 'Home', href: '/' },
-        { label: 'Contracts' },
+        { label: isEmployee ? 'My Contract' : 'Contracts' },
       ]} />
 
       <PageHeader
-        title="Employee Contracts"
-        subtitle={`Showing ${filteredContracts.length} employment contracts`}
+        title={isEmployee ? "My Employment Contract" : "Employee Contracts"}
+        subtitle={isEmployee ? "Your compensation, structure, and contract terms" : `Showing ${filteredContracts.length} employment contracts`}
         actions={
-          <Button variant="primary" onClick={() => navigate('/contracts/new')}>
-            + New Contract
-          </Button>
+          canManageContracts && (
+            <Button variant="primary" onClick={() => navigate('/contracts/new')}>
+              + New Contract
+            </Button>
+          )
         }
       />
 

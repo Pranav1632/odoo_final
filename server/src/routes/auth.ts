@@ -28,9 +28,6 @@ router.post(
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-    if (user.status === 'pending') {
-      return res.status(403).json({ error: 'Your account is awaiting HR/Admin approval.' });
-    }
     if (user.status === 'disabled') {
       return res.status(403).json({ error: 'Your account has been disabled. Contact an administrator.' });
     }
@@ -85,12 +82,17 @@ router.post(
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Allow optional role from register or default to EMPLOYEE
+    const role = (req.body.role && ['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER', 'HR_MANAGER', 'EMPLOYEE'].includes(req.body.role)) 
+      ? req.body.role 
+      : 'EMPLOYEE';
+
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        role: 'EMPLOYEE',
-        status: 'pending',
+        role: role as any,
+        status: 'active',
         employee: {
           create: {
             name: name || email.split('@')[0],
@@ -109,10 +111,23 @@ router.post(
       entityId: user.id,
     });
 
-    // No token — a pending account cannot log in yet.
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        employeeId: user.employee?.id,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '8h' }
+    );
+
     return res.status(201).json({
-      pending: true,
-      message: 'Registration submitted. An administrator must approve your account before you can sign in.',
+      token,
+      userId: user.id,
+      role: user.role,
+      employeeId: user.employee?.id,
+      name: user.employee?.name || user.email.split('@')[0],
       email: user.email,
     });
   })
