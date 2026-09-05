@@ -7,7 +7,8 @@ import {
 import { 
   contracts as mockContracts, employees as mockEmployees, salaryStructures, formatDate, getStatusColor
 } from '../data/mockData';
-import { contractsApi } from '../lib/api';
+import { contractsApi, authApi } from '../lib/api';
+
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses' },

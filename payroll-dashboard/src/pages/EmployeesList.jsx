@@ -8,8 +8,8 @@ import {
   employees as mockEmployees, departments, jobPositions, schedules,
   getStatusColor
 } from '../data/mockData';
-import { getSession } from '../lib/user';
-import { employeesApi } from '../lib/api';
+import { employeesApi, authApi } from '../lib/api';
+
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses' },
