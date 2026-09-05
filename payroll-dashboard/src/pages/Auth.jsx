@@ -38,6 +38,12 @@ export function AuthPage({ onLoginSuccess }) {
   };
 
   const handleRoleSelect = (selectedRole) => {
+    if (mode === 'register') {
+      // In register mode, only update the role — don't overwrite what the user typed
+      handleChange('role', selectedRole);
+      return;
+    }
+    // In login mode, auto-fill credentials from the seeded demo account
     const seedUser = SEED_USERS.find(u => u.role === selectedRole);
     if (seedUser) {
       setFormData({
@@ -104,7 +110,7 @@ export function AuthPage({ onLoginSuccess }) {
           <div className="flex items-center justify-center gap-2 mb-6 border-b border-gray-100 pb-4">
             <button
               type="button"
-              onClick={() => { setMode('login'); setError(''); }}
+              onClick={() => { setMode('login'); setError(''); setFormData({ name: '', email: 'payroll.manager@peoplepay360.com', password: 'Manager@123', role: 'HR_PAYROLL_MANAGER' }); }}
               className={`pb-1 text-sm font-semibold transition-colors relative ${
                 mode === 'login' ? 'text-ink-900 border-b-2 border-ink-900' : 'text-gray-400 hover:text-gray-600'
               }`}
@@ -114,7 +120,7 @@ export function AuthPage({ onLoginSuccess }) {
             <span className="text-gray-300">·</span>
             <button
               type="button"
-              onClick={() => { setMode('register'); setError(''); }}
+              onClick={() => { setMode('register'); setError(''); setFormData({ name: '', email: '', password: '', role: 'EMPLOYEE' }); }}
               className={`pb-1 text-sm font-semibold transition-colors relative ${
                 mode === 'register' ? 'text-ink-900 border-b-2 border-ink-900' : 'text-gray-400 hover:text-gray-600'
               }`}
@@ -195,21 +201,21 @@ export function AuthPage({ onLoginSuccess }) {
                 label={mode === 'login' ? 'Role' : 'Requested Role'}
                 value={formData.role}
                 onChange={(e) => handleRoleSelect(e.target.value)}
-                options={SEED_USERS.map((user) => ({
-                  value: user.role,
-                  label: `${formatRoleName(user.role)} — ${user.name}`,
-                }))}
+                options={
+                  mode === 'login'
+                    ? SEED_USERS.map((user) => ({
+                        value: user.role,
+                        label: `${formatRoleName(user.role)} — ${user.name}`,
+                      }))
+                    : [
+                        { value: 'EMPLOYEE', label: 'Employee' },
+                        { value: 'HR_MANAGER', label: 'HR Manager' },
+                        { value: 'HR_PAYROLL_USER', label: 'HR Payroll User' },
+                        { value: 'HR_PAYROLL_MANAGER', label: 'HR Payroll Manager' },
+                        { value: 'ADMIN', label: 'Admin' },
+                      ]
+                }
               />
-              {mode === 'login' && activeSeedUser && (
-                <div className="mt-2 px-3 py-2 bg-cream/70 rounded-xl flex items-center justify-between text-xs border border-black/[0.04]">
-                  <span className="text-gray-700 font-medium truncate">
-                    {activeSeedUser.name}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-ink-900 text-white shadow-2xs">
-                    {formatRoleName(activeSeedUser.role)}
-                  </span>
-                </div>
-              )}
             </div>
 
             <Button

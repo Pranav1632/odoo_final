@@ -311,14 +311,14 @@ export function EmployeeForm() {
                     label="Manager"
                     value={formData.managerId}
                     onChange={(e) => handleChange('managerId', e.target.value)}
-                    options={[{value:'',label:'No manager'},...filteredManagers.map(m=>({value:m.id,label:m.fullName}))]}
+                    options={[{value:'',label:'No manager'},...filteredManagers.map(m=>({value:m.id,label:m.name}))]}
                     data-testid="employee-form-manager"
                   />
                   <Select
                     label="Working Schedule *"
                     value={formData.scheduleId}
                     onChange={(e) => handleChange('scheduleId', e.target.value)}
-                    options={[{value:'',label:'Select schedule'},...schedules.map(s=>({value:s.id,label:s.name}))]}
+                    options={[{value:'',label:'Select schedule'},...scheduleList.map(s=>({value:s.id,label:s.name}))]}
                     error={errors.scheduleId}
                     data-testid="employee-form-schedule"
                     required
