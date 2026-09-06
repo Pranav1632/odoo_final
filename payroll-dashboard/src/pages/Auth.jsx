@@ -85,8 +85,6 @@ export function AuthPage({ onLoginSuccess }) {
     }
   };
 
-  const activeSeedUser = SEED_USERS.find(u => u.email === formData.email || u.role === formData.role) || SEED_USERS[1];
-
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">

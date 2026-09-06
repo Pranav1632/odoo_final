@@ -296,6 +296,8 @@ router.patch(
       if (!request) throw new ApiError(404, 'Request not found');
       if (request.status !== 'pending')
         throw new ApiError(400, 'Request is not pending');
+      if (request.employeeId === session.employeeId)
+        throw new ApiError(403, 'Cannot approve your own time off request');
 
       // Only check allocation if the type requires it
       const type = await tx.timeOffType.findUnique({
@@ -359,6 +361,8 @@ router.patch(
     if (!request) throw new ApiError(404, 'Request not found');
     if (request.status !== 'pending')
       throw new ApiError(400, 'Request is not pending');
+    if (request.employeeId === session.employeeId)
+      throw new ApiError(403, 'Cannot refuse your own time off request');
 
     await prisma.timeOffRequest.update({
       where: { id },

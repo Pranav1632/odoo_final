@@ -85,11 +85,11 @@ export function EmployeeForm() {
             setEmployee(emp);
             setFormData({
               fullName: emp.name || '',
-              dateOfBirth: '1995-01-01',
-              gender: 'Male',
-              personalEmail: `${(emp.name || 'user').toLowerCase().replace(/\s+/g, '.')}@personal.com`,
-              phone: '+1-555-0199',
-              address: '123 Main St, City, ST',
+              dateOfBirth: emp.dateOfBirth?.split('T')[0] || '',
+              gender: emp.gender || '',
+              personalEmail: emp.personalEmail || '',
+              phone: emp.phone || '',
+              address: emp.address || '',
               departmentId: emp.department || 'Engineering',
               jobPositionId: emp.jobPosition || 'Developer',
               managerId: emp.managerId || '',
@@ -98,13 +98,13 @@ export function EmployeeForm() {
               employmentType: emp.employmentType || 'Full-time',
               startDate: emp.hireDate?.split('T')[0] || new Date().toISOString().split('T')[0],
               endDate: '',
-              workEmail: `${(emp.name || 'user').toLowerCase().replace(/\s+/g, '.')}@company.com`,
-              workPhone: '+1-555-0199',
-              bankName: 'HDFC Bank',
+              workEmail: emp.workEmail || '',
+              workPhone: emp.workPhone || '',
+              bankName: emp.bankName || '',
               accountNumber: emp.bankAccountNumber || '',
-              ifscCode: 'HDFC0001234',
+              ifscCode: emp.ifscCode || '',
               accountHolderName: emp.name || '',
-              paymentMethod: 'Bank Transfer',
+              paymentMethod: emp.paymentMethod || 'Bank Transfer',
             });
           }
         })

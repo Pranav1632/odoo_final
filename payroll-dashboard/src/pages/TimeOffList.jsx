@@ -13,7 +13,6 @@ export function TimeOffList() {
   const navigate = useNavigate();
   const session = getSession();
   const isEmployee = session?.role === 'EMPLOYEE';
-  const canApproveTimeOff = session?.role === 'HR_MANAGER' || session?.role === 'ADMIN';
   const [searchParams, setSearchParams] = useSearchParams();
   
   const initialTab = searchParams.get('tab') || 'requests';
@@ -222,23 +221,22 @@ export function TimeOffList() {
     { key: 'status', header: 'Status', width: '110px', render: (row) => (
       <Badge variant={getStatusColor(row.status)}>{row.status}</Badge>
     )},
-    ...(canApproveTimeOff ? [{
-      key: 'actions', 
-      header: 'Actions', 
-      width: '160px', 
-      render: (row) => (
+    { key: 'actions', header: 'Actions', width: '160px', render: (row) => {
+      const canApprove = ['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'].includes(session?.role)
+        && row.employeeId !== session?.employeeId;
+      return (
         <div className="flex items-center gap-1">
-          {row.status === 'Pending' ? (
+          {row.status === 'Pending' && canApprove ? (
             <>
               <Button variant="success" size="sm" onClick={() => handleApproveRequest(row.id)}>Approve</Button>
               <Button variant="danger" size="sm" onClick={() => handleRefuseRequest(row.id)}>Refuse</Button>
             </>
           ) : (
-            <span className="text-xs text-gray-400">Processed</span>
+            <span className="text-xs text-gray-400">{row.status === 'Pending' ? 'Awaiting approval' : 'Processed'}</span>
           )}
         </div>
-      )
-    }] : []),
+      );
+    }},
   ];
 
   const allocationColumns = [

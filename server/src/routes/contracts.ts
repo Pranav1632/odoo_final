@@ -64,7 +64,7 @@ router.get(
 router.post(
   '/',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
     const body = createSchema.parse(req.body);
@@ -130,7 +130,7 @@ router.get(
 router.patch(
   '/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
     const id = req.params.id as string;
@@ -172,7 +172,7 @@ router.patch(
 router.delete(
   '/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
+  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
     const id = req.params.id as string;

@@ -42,6 +42,9 @@ router.post(
     if (user.status === 'disabled') {
       return res.status(403).json({ error: 'Your account has been disabled. Contact an administrator.' });
     }
+    if (user.status === 'pending') {
+      return res.status(403).json({ error: 'Your account is awaiting admin approval.' });
+    }
 
     const token = jwt.sign(
       {
@@ -92,16 +95,15 @@ router.post(
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Allow optional role from register or default to EMPLOYEE
-    const role = (req.body.role && ['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER', 'HR_MANAGER', 'EMPLOYEE'].includes(req.body.role)) 
-      ? req.body.role 
-      : 'EMPLOYEE';
-
+    // Self-registration is never trusted with a role — every account is
+    // created as EMPLOYEE, status 'pending' (Prisma schema default), and
+    // must be approved (and optionally promoted) by an Admin via
+    // PATCH /api/users/:id before it can log in.
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        role: role as any,
+        role: 'EMPLOYEE',
         employee: {
           create: {
             name: name || email.split('@')[0],
@@ -120,24 +122,9 @@ router.post(
       entityId: user.id,
     });
 
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        employeeId: user.employee?.id,
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '8h' }
-    );
-
     return res.status(201).json({
-      token,
-      userId: user.id,
-      role: user.role,
-      employeeId: user.employee?.id,
-      name: user.employee?.name || user.email.split('@')[0],
-      email: user.email,
+      pending: true,
+      message: 'Registration submitted. An administrator must approve your account before you can sign in.',
     });
   })
 );

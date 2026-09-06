@@ -178,6 +178,9 @@ async function main() {
 
   // ─── 3. Users + Employees ──────────────────────────────────────────────────
   const hashedAdmin = await bcrypt.hash('Admin@123', 10);
+  const hashedMgr = await bcrypt.hash('Manager@123', 10);
+  const hashedUser = await bcrypt.hash('User@123', 10);
+  const hashedHr = await bcrypt.hash('Hr@123', 10);
   const hashedEmp = await bcrypt.hash('Emp@123', 10);
 
   const departments = ['Engineering', 'Marketing', 'HR', 'Operations', 'Finance', 'Sales', 'Support', 'Product'];
@@ -213,7 +216,7 @@ async function main() {
     const u = await prisma.user.create({
       data: {
         email: `hr.manager${i}@peoplepay360.com`,
-        password: hashedAdmin,
+        password: hashedHr,
         role: Role.HR_MANAGER,
         status: 'active',
         employee: {
@@ -229,14 +232,14 @@ async function main() {
       include: { employee: true },
     });
     hrManagers.push(u);
-    userCredentials.push({ name: `HR Manager ${i}`, email: `hr.manager${i}@peoplepay360.com`, role: 'HR_MANAGER', password: 'Admin@123', employeeId: u.employee?.id });
+    userCredentials.push({ name: `HR Manager ${i}`, email: `hr.manager${i}@peoplepay360.com`, role: 'HR_MANAGER', password: 'Hr@123', employeeId: u.employee?.id });
   }
 
   // HR Payroll Managers (2)
   const payrollManager1 = await prisma.user.create({
     data: {
       email: 'payroll.manager@peoplepay360.com',
-      password: hashedAdmin,
+      password: hashedMgr,
       role: Role.HR_PAYROLL_MANAGER,
       status: 'active',
       employee: {
@@ -251,12 +254,12 @@ async function main() {
     },
     include: { employee: true },
   });
-  userCredentials.push({ name: 'Payroll Manager', email: 'payroll.manager@peoplepay360.com', role: 'HR_PAYROLL_MANAGER', password: 'Admin@123', employeeId: payrollManager1.employee?.id });
+  userCredentials.push({ name: 'Payroll Manager', email: 'payroll.manager@peoplepay360.com', role: 'HR_PAYROLL_MANAGER', password: 'Manager@123', employeeId: payrollManager1.employee?.id });
 
   const payrollManager2 = await prisma.user.create({
     data: {
       email: 'payroll.manager2@peoplepay360.com',
-      password: hashedAdmin,
+      password: hashedMgr,
       role: Role.HR_PAYROLL_MANAGER,
       status: 'active',
       employee: {
@@ -271,14 +274,14 @@ async function main() {
     },
     include: { employee: true },
   });
-  userCredentials.push({ name: 'Lead Payroll Manager', email: 'payroll.manager2@peoplepay360.com', role: 'HR_PAYROLL_MANAGER', password: 'Admin@123', employeeId: payrollManager2.employee?.id });
+  userCredentials.push({ name: 'Lead Payroll Manager', email: 'payroll.manager2@peoplepay360.com', role: 'HR_PAYROLL_MANAGER', password: 'Manager@123', employeeId: payrollManager2.employee?.id });
 
   // HR Payroll Users (2)
   for (let i = 1; i <= 2; i++) {
     const u = await prisma.user.create({
       data: {
         email: i === 1 ? 'payroll.user@peoplepay360.com' : `payroll.user${i}@peoplepay360.com`,
-        password: hashedAdmin,
+        password: hashedUser,
         role: Role.HR_PAYROLL_USER,
         status: 'active',
         employee: {
@@ -293,7 +296,7 @@ async function main() {
       },
       include: { employee: true },
     });
-    userCredentials.push({ name: `Payroll Specialist ${i}`, email: u.email, role: 'HR_PAYROLL_USER', password: 'Admin@123', employeeId: u.employee?.id });
+    userCredentials.push({ name: `Payroll Specialist ${i}`, email: u.email, role: 'HR_PAYROLL_USER', password: 'User@123', employeeId: u.employee?.id });
   }
 
   // 300 Employee users
