@@ -83,41 +83,61 @@ odoo/
 
 ---
 
-## 🌟 Core System Specifications & Module Workflows
+## ⚙️ Core Technical Implementation Details
 
-### 🔐 1. Authentication & Role-Based Access Control (RBAC)
-- **Roles**: `ADMIN`, `HR_PAYROLL_MANAGER`, `HR_PAYROLL_USER`, `HR_MANAGER`, and `EMPLOYEE`.
-- **Registration Approval Flow**: Self-registered accounts start as `pending` with `EMPLOYEE` privileges and require Admin approval before accessing the system.
-- **Session Protection**: Automatic session invalidation and dedicated top-level error routes (`/401`, `/403`, `/404`, `/500`) with quick account-switching.
+### 🔑 1. Authentication, Approval & Authorization Architecture
+- **JWT & Stateless Authentication**: [`server/src/routes/auth.ts`](file:///d:/odoo/odoo/server/src/routes/auth.ts) verifies password hashes using `bcrypt` (10 rounds) and issues signed 8-hour JWT tokens.
+- **Strict Registration Gatekeeper**: Self-registered users default strictly to `EMPLOYEE` role with `status: 'pending'`. The login route blocks unapproved users with `403 Forbidden - Your account is awaiting admin approval`.
+- **Role Authorization Middleware**: [`server/src/middleware/auth.ts`](file:///d:/odoo/odoo/server/src/middleware/auth.ts) enforces granular endpoint protection across 5 roles (`ADMIN`, `HR_PAYROLL_MANAGER`, `HR_PAYROLL_USER`, `HR_MANAGER`, `EMPLOYEE`).
+- **Frontend Permission Protection**: [`payroll-dashboard/src/App.jsx`](file:///d:/odoo/odoo/payroll-dashboard/src/App.jsx) wraps routes in `ProtectedRoute` and auto-clears stale sessions. Unauthorized access redirects to top-level dedicated error components ([`ErrorPages.jsx`](file:///d:/odoo/odoo/payroll-dashboard/src/pages/ErrorPages.jsx)).
 
-### 👥 2. Core HR & Employee Lifecycle
-- **Employee Directory**: Profile management, personal data, department allocations, and working schedule assignments.
-- **Contract Management**: Multi-currency wage setup, contract start/end dates, state tracking (`draft`, `open`, `close`, `cancel`), and validation rules preventing overlapping active contracts.
-- **Attendance & Time-off Engine**:
-  - Time-off request workflow (Draft → Submitted → Approved / Refused).
-  - Built-in **Self-Approval Guard** preventing managers from approving or refusing their own leave requests.
-  - Automatic deduction of remaining leave balances upon approval.
+---
 
-### ⚙️ 3. Dynamic Salary Engine & Payroll Computation
-- **Configurable Salary Structures & Rules**:
-  - `fixed`: Static amounts (e.g. Basic Salary, Mobile Allowance).
-  - `percentage`: Percentage calculations derived from scope variables (e.g. HRA as 40% of BASIC).
-  - `formula`: Dynamic math expressions evaluated via `mathjs` (e.g. Provident Fund `BASIC * 0.12`).
-- **Sequential Rule Execution**: Rules run strictly in `sequence` order, building up an execution scope.
-- **Payrun Lifecycle**:
-  - Eligible employee discovery based on active contract dates.
-  - One-click batch payrun computation (`draft` → `computed`).
-  - Validation step (`done`) generating itemized payslips per employee.
+### 👥 2. Core HR, Employee Directory & Contract Validation
+- **Data Models**: Defined in [`schema.prisma`](file:///d:/odoo/odoo/server/prisma/schema.prisma) with explicit relations between `User`, `Employee`, `Contract`, `WorkingSchedule`, and `Department`.
+- **Active Contract Overlap Protection**: [`server/src/lib/contractUtils.ts`](file:///d:/odoo/odoo/server/src/lib/contractUtils.ts) validates date ranges on contract creation/update. A newly activated contract automatically transitions existing active contracts for the employee to `close`.
+- **Employee Directory & Filtering**: [`payroll-dashboard/src/pages/EmployeesList.jsx`](file:///d:/odoo/odoo/payroll-dashboard/src/pages/EmployeesList.jsx) displays department counts, active/inactive statuses, search filters, and employee details view.
+- **Personal Details Editing**: [`payroll-dashboard/src/pages/Profile.jsx`](file:///d:/odoo/odoo/payroll-dashboard/src/pages/Profile.jsx) provides self-service access to own attendance, contract, payslips, and bank account editing.
 
-### 📧 4. Asynchronous Bulk Email & Payslip Dispatch
-- **Background Mail Queue**: Powered by **BullMQ** and **Redis** for non-blocking asynchronous email processing.
-- **PDF Generation**: Generates itemized PDF payslips on the fly using `pdfkit`.
-- **Local Mailpit SMTP Support**: Outbound mail delivered to Mailpit (`localhost:1025`) with web UI dashboard (`http://localhost:8025`).
-- **Fault-Tolerant Delivery**: Bad email addresses or delivery errors log to `ErrorLog` without blocking the rest of the batch.
+---
 
-### 📊 5. Audit & System Monitoring
-- **Audit Logs**: Automatic audit trail for all data mutations (Entity, Action, User ID, Changes payload).
-- **Error Logs**: System error logging for background workers, API exceptions, and database errors.
+### 🌴 3. Time-Off Engine & Self-Approval Guard
+- **Time-Off Workflow**: Managed via [`server/src/routes/timeoff.ts`](file:///d:/odoo/odoo/server/src/routes/timeoff.ts) across Leave Types (`Paid Time Off`, `Sick Leave`), Allocations, and Requests.
+- **Self-Approval Prevention Guard**: Explicit backend check on `PATCH /api/time-off/requests/:id/approve` and `/refuse`:
+  ```typescript
+  if (request.employeeId === session.employeeId) {
+    throw new ApiError(403, 'Cannot approve your own time off request');
+  }
+  ```
+- **Automatic Allocation Balance Deductions**: When a request is approved inside a Prisma transaction, the employee's remaining allocation balance is decremented automatically.
+
+---
+
+### 🧮 4. Salary Engine & Payroll Computation
+- **Rule Computation Engine**: Implemented in [`server/src/lib/payroll/computeRules.ts`](file:///d:/odoo/odoo/server/src/lib/payroll/computeRules.ts):
+  - **`fixed`**: Static values (`amount`).
+  - **`percentage`**: Multiplies previously calculated scope variables (`scope[percentageOf] * percentageValue / 100`).
+  - **`formula`**: Evaluates mathematical strings dynamically via `mathjs` safely (`BASIC * 0.12`).
+- **Sequential Scope Accumulation**: Rules execute strictly by `sequence` integer order, building up a dynamic execution scope dictionary.
+- **Payrun State Lifecycle**:
+  - `GET /api/payroll/payruns/eligible-employees`: Selects active employees with valid overlapping contracts.
+  - `POST /api/payroll/payruns/:id/compute`: Executes rule computation across all eligible employees (`draft` → `computed`).
+  - `POST /api/payroll/payruns/:id/validate`: Finalizes payrun (`computed` → `done`) and generates itemized payslips.
+
+---
+
+### 📧 5. Asynchronous Queue & Bulk Mail Worker
+- **BullMQ + Redis Task Queue**: [`server/src/lib/payroll/queue.ts`](file:///d:/odoo/odoo/server/src/lib/payroll/queue.ts) initializes Redis connection and job queue `payslip-send`.
+- **Background Worker**: [`server/src/lib/payroll/workers/sendPayslips.ts`](file:///d:/odoo/odoo/server/src/lib/payroll/workers/sendPayslips.ts) executes bulk send jobs in background without blocking HTTP responses.
+- **PDF Generation**: [`server/src/lib/payroll/generatePdf.ts`](file:///d:/odoo/odoo/server/src/lib/payroll/generatePdf.ts) formats itemized PDF payslip attachments using `pdfkit`.
+- **SMTP Mailpit Integration**: [`server/src/lib/email.ts`](file:///d:/odoo/odoo/server/src/lib/email.ts) transmits SMTP emails to Mailpit (`localhost:1025`).
+- **Batch Fault Isolation**: Errors for missing emails or SMTP connection issues write to `ErrorLog` without failing the remaining batch.
+
+---
+
+### 📊 6. System Auditing & Error Tracking
+- **Audit Logs**: [`server/src/lib/audit.ts`](file:///d:/odoo/odoo/server/src/lib/audit.ts) writes audit entries (`writeAuditLog`) for all CREATE, UPDATE, and DELETE operations, visible in [`AuditLog.jsx`](file:///d:/odoo/odoo/payroll-dashboard/src/pages/AuditLog.jsx).
+- **Error Logs**: [`server/src/lib/errorLog.ts`](file:///d:/odoo/odoo/server/src/lib/errorLog.ts) captures unhandled API exceptions and background queue errors (`writeErrorLog`).
 
 ---
 
