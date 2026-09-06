@@ -84,6 +84,7 @@ router.post(
       action: 'CREATE_PAYRUN',
       entityType: 'Payrun',
       entityId: payrun.id,
+      details: { name: payrun.name, periodStart: payrun.periodStart, periodEnd: payrun.periodEnd, status: payrun.status },
     });
 
     res.status(201).json(payrun);
@@ -414,6 +415,7 @@ router.post(
       action: 'COMPUTE_PAYRUN',
       entityType: 'Payrun',
       entityId: id,
+      details: { status: 'computed', computedCount: updates.filter((u: any) => !u.skipped).length },
     });
 
     res.json({
@@ -479,6 +481,7 @@ router.post(
       action: 'VALIDATE_PAYRUN',
       entityType: 'Payrun',
       entityId: id,
+      details: { status: 'validated', name: payrun.name },
     });
 
     res.json({ message: 'Payrun validated' });
@@ -520,6 +523,7 @@ router.post(
       action: 'MARK_PAID',
       entityType: 'Payrun',
       entityId: id,
+      details: { status: 'paid', name: payrun.name },
     });
 
     res.json({ message: 'Payrun marked as paid' });

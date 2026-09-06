@@ -97,12 +97,21 @@ export function AuditLog() {
     { key: 'timestamp', header: 'Timestamp', width: '160px', render: (row) => (
       <span className="font-mono text-xs text-gray-700">{row.timestamp}</span>
     )},
-    { key: 'userName', header: 'User', width: '180px', render: (row) => (
-      <div>
-        <p className="font-semibold text-gray-900 text-sm">{row.userName}</p>
-        {row.userEmail && <p className="text-[11px] font-mono text-gray-500">{row.userEmail}</p>}
-      </div>
-    )},
+    { key: 'userName', header: 'User', width: '220px', render: (row) => {
+      const isRawId = row.userName && row.userName.startsWith('c');
+      const displayName = isRawId ? (row.userEmail ? row.userEmail.split('@')[0] : 'System User') : row.userName;
+      const displayEmail = row.userEmail || (isRawId ? null : null);
+      return (
+        <div>
+          <p className="font-semibold text-gray-900 text-sm truncate max-w-[200px]">{displayName}</p>
+          {row.userEmail ? (
+            <p className="text-[11px] font-mono text-gray-500 truncate max-w-[200px]">{row.userEmail}</p>
+          ) : isRawId ? (
+            <p className="text-[10px] font-mono text-gray-400 truncate max-w-[200px]">ID: {row.userName}</p>
+          ) : null}
+        </div>
+      );
+    }},
     { key: 'action', header: 'Action', width: '180px', render: (row) => (
       <Badge variant="primary">{row.action}</Badge>
     )},

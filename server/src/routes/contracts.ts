@@ -101,6 +101,7 @@ router.post(
       action: 'CREATE_CONTRACT',
       entityType: 'Contract',
       entityId: contract.id,
+      details: { wage: contract.wage, department: contract.department, position: contract.position, status: contract.status },
     });
     return res.status(201).json(contract);
   })

@@ -252,6 +252,7 @@ router.post(
       action: 'CREATE_TIMEOFF_REQUEST',
       entityType: 'TimeOffRequest',
       entityId: request.id,
+      details: { duration: request.duration, startDate: request.startDate, endDate: request.endDate },
     });
 
     return res.status(201).json(request);
@@ -338,6 +339,7 @@ router.patch(
       action: 'APPROVE_TIMEOFF',
       entityType: 'TimeOffRequest',
       entityId: id,
+      details: { status: 'approved', approvedBy: session.email },
     });
 
     return res.json({ success: true });
@@ -368,6 +370,7 @@ router.patch(
       action: 'REFUSE_TIMEOFF',
       entityType: 'TimeOffRequest',
       entityId: id,
+      details: { status: 'refused', refusedBy: session.email },
     });
 
     return res.json({ success: true });
