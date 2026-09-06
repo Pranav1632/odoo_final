@@ -31,7 +31,7 @@ import { getSession, logout } from './lib/user';
 function ProtectedRoute({ session, allowedRoles, onLogout, children }) {
   if (!session) return <Navigate to="/login" replace />;
   if (allowedRoles && !allowedRoles.includes('ALL') && !allowedRoles.includes(session.role)) {
-    return <Error403Page session={session} onLogout={onLogout} />;
+    return <Navigate to="/403" replace />;
   }
   return children;
 }
@@ -358,27 +358,15 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {!session ? (
-        <Routes>
-          <Route path="/login" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="/register" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="/401" element={<Error401Page onLogout={handleLogout} />} />
-          <Route path="/403" element={<Error403Page session={null} onLogout={handleLogout} />} />
-          <Route path="/404" element={<Error404Page />} />
-          <Route path="/500" element={<Error500Page />} />
-          <Route path="*" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
-        </Routes>
-      ) : (
-        <Routes>
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/register" element={<Navigate to="/" replace />} />
-          <Route path="/401" element={<Error401Page onLogout={handleLogout} />} />
-          <Route path="/403" element={<Error403Page session={session} onLogout={handleLogout} />} />
-          <Route path="/404" element={<Error404Page />} />
-          <Route path="/500" element={<Error500Page />} />
-          <Route path="/*" element={<Layout session={session} onLogout={handleLogout} />} />
-        </Routes>
-      )}
+      <Routes>
+        <Route path="/login" element={!session ? <AuthPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" replace />} />
+        <Route path="/register" element={!session ? <AuthPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" replace />} />
+        <Route path="/401" element={<Error401Page onLogout={handleLogout} />} />
+        <Route path="/403" element={<Error403Page session={session} onLogout={handleLogout} />} />
+        <Route path="/404" element={<Error404Page />} />
+        <Route path="/500" element={<Error500Page />} />
+        <Route path="/*" element={session ? <Layout session={session} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
+      </Routes>
     </BrowserRouter>
   );
 }
