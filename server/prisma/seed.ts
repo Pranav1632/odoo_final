@@ -183,6 +183,9 @@ async function main() {
   const departments = ['Engineering', 'Marketing', 'HR', 'Operations', 'Finance', 'Sales', 'Support', 'Product'];
   const positions = ['Junior Developer', 'Senior Developer', 'Team Lead', 'Manager', 'Analyst', 'Designer', 'QA Engineer', 'DevOps Engineer', 'Consultant', 'Coordinator'];
 
+  // List to track all generated credentials for CSV export
+  const userCredentials: { name: string; email: string; role: string; password: string; employeeId?: string }[] = [];
+
   // Admin
   const adminUser = await prisma.user.create({
     data: {
@@ -202,10 +205,11 @@ async function main() {
     },
     include: { employee: true },
   });
+  userCredentials.push({ name: 'Admin User', email: 'admin@peoplepay360.com', role: 'ADMIN', password: 'Admin@123', employeeId: adminUser.employee?.id });
 
-  // HR Managers (2)
+  // HR Managers (5)
   const hrManagers = [];
-  for (let i = 1; i <= 2; i++) {
+  for (let i = 1; i <= 5; i++) {
     const u = await prisma.user.create({
       data: {
         email: `hr.manager${i}@peoplepay360.com`,
@@ -225,10 +229,11 @@ async function main() {
       include: { employee: true },
     });
     hrManagers.push(u);
+    userCredentials.push({ name: `HR Manager ${i}`, email: `hr.manager${i}@peoplepay360.com`, role: 'HR_MANAGER', password: 'Admin@123', employeeId: u.employee?.id });
   }
 
-  // HR Payroll Manager (1)
-  const payrollManager = await prisma.user.create({
+  // HR Payroll Managers (2)
+  const payrollManager1 = await prisma.user.create({
     data: {
       email: 'payroll.manager@peoplepay360.com',
       password: hashedAdmin,
@@ -246,19 +251,19 @@ async function main() {
     },
     include: { employee: true },
   });
+  userCredentials.push({ name: 'Payroll Manager', email: 'payroll.manager@peoplepay360.com', role: 'HR_PAYROLL_MANAGER', password: 'Admin@123', employeeId: payrollManager1.employee?.id });
 
-  // HR Payroll User (1)
-  const payrollUser = await prisma.user.create({
+  const payrollManager2 = await prisma.user.create({
     data: {
-      email: 'payroll.user@peoplepay360.com',
+      email: 'payroll.manager2@peoplepay360.com',
       password: hashedAdmin,
-      role: Role.HR_PAYROLL_USER,
+      role: Role.HR_PAYROLL_MANAGER,
       status: 'active',
       employee: {
         create: {
-          name: 'Payroll User',
+          name: 'Lead Payroll Manager',
           department: 'Finance',
-          jobPosition: 'Payroll Specialist',
+          jobPosition: 'Senior Payroll Manager',
           scheduleId: schedules[0].id,
           status: 'active',
         },
@@ -266,28 +271,53 @@ async function main() {
     },
     include: { employee: true },
   });
+  userCredentials.push({ name: 'Lead Payroll Manager', email: 'payroll.manager2@peoplepay360.com', role: 'HR_PAYROLL_MANAGER', password: 'Admin@123', employeeId: payrollManager2.employee?.id });
 
-  // 50 Employee users
+  // HR Payroll Users (2)
+  for (let i = 1; i <= 2; i++) {
+    const u = await prisma.user.create({
+      data: {
+        email: i === 1 ? 'payroll.user@peoplepay360.com' : `payroll.user${i}@peoplepay360.com`,
+        password: hashedAdmin,
+        role: Role.HR_PAYROLL_USER,
+        status: 'active',
+        employee: {
+          create: {
+            name: `Payroll Specialist ${i}`,
+            department: 'Finance',
+            jobPosition: 'Payroll Specialist',
+            scheduleId: schedules[0].id,
+            status: 'active',
+          },
+        },
+      },
+      include: { employee: true },
+    });
+    userCredentials.push({ name: `Payroll Specialist ${i}`, email: u.email, role: 'HR_PAYROLL_USER', password: 'Admin@123', employeeId: u.employee?.id });
+  }
+
+  // 300 Employee users
   const employees = [];
-  for (let i = 1; i <= 50; i++) {
+  for (let i = 1; i <= 300; i++) {
     const dept = departments[i % departments.length];
     const pos = positions[i % positions.length];
     const scheduleIdx = i % 3;
-    // Mostly full-time, with a realistic minority of part-time/contract staff —
-    // gives the dashboard's Employee Type filter something meaningful to split.
     const employmentType = i % 7 === 0 ? 'Contract' : i % 5 === 0 ? 'Part-time' : 'Full-time';
-    const hireDate = new Date(2022, 0, 1);
-    hireDate.setDate(hireDate.getDate() + i * 23); // spread hire dates across ~3 years
+    const hireDate = new Date(2021, 0, 1);
+    hireDate.setDate(hireDate.getDate() + i * 5); // spread hire dates
+
+    const empName = `Employee ${i}`;
+    const empEmail = `emp${i}@peoplepay360.com`;
 
     const u = await prisma.user.create({
       data: {
-        email: `emp${i}@peoplepay360.com`,
+        email: empEmail,
         password: hashedEmp,
         role: Role.EMPLOYEE,
         status: 'active',
         employee: {
           create: {
-            name: `Employee ${i}`,
+            name: empName,
             department: dept,
             jobPosition: pos,
             scheduleId: schedules[scheduleIdx].id,
@@ -295,33 +325,33 @@ async function main() {
             employmentType,
             hireDate,
             bankAccountNumber: `${1000000000 + i}`,
-            managerId: hrManagers[i % 2]?.employee?.id,
+            managerId: hrManagers[i % 5]?.employee?.id,
           },
         },
       },
       include: { employee: true },
     });
     employees.push(u);
+    userCredentials.push({ name: empName, email: empEmail, role: 'EMPLOYEE', password: 'Emp@123', employeeId: u.employee?.id });
   }
 
-  console.log(`  ✓ Created 55 users (1 admin + 2 HR + 1 payroll mgr + 1 payroll user + 50 employees)`);
+  console.log(`  ✓ Created 310 users (1 admin + 5 HR + 2 payroll mgr + 2 payroll user + 300 employees)`);
 
   // ─── 4. Contracts ──────────────────────────────────────────────────────────
   const now = new Date();
   let contractCount = 0;
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 300; i++) {
     const empId = employees[i].employee!.id;
-    const baseWage = 25000 + Math.floor(Math.random() * 35000); // 25000-60000
-    const raise = 1 + (5 + Math.floor(Math.random() * 11)) / 100; // 5-15% raise
+    const baseWage = 30000 + Math.floor(Math.random() * 50000); // 30000-80000
+    const raise = 1 + (5 + Math.floor(Math.random() * 11)) / 100;
 
-    // Determine structure: employees 1-5 use structure1, 6-10 use structure2, rest alternate
     let structureId: string;
-    if (i < 5) structureId = structure1.id;
-    else if (i < 10) structureId = structure2.id;
+    if (i < 30) structureId = structure1.id;
+    else if (i < 60) structureId = structure2.id;
     else structureId = i % 2 === 0 ? structure1.id : structure2.id;
 
-    // Contract 1: expired (ended 6 months ago)
+    // Contract 1: expired
     const expiredEnd = new Date(now);
     expiredEnd.setMonth(expiredEnd.getMonth() - 6);
     const expiredStart = new Date(expiredEnd);
@@ -340,7 +370,7 @@ async function main() {
       },
     });
 
-    // Contract 2: active (started 5 months ago, no end)
+    // Contract 2: active
     const activeStart = new Date(now);
     activeStart.setMonth(activeStart.getMonth() - 5);
 
@@ -379,10 +409,10 @@ async function main() {
   const yearStart = new Date(now.getFullYear(), 0, 1);
   const yearEnd = new Date(now.getFullYear(), 11, 31);
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 300; i++) {
     const empId = employees[i].employee!.id;
-    const annualTaken = Math.floor(Math.random() * 9); // 0-8
-    const sickTaken = Math.floor(Math.random() * 5); // 0-4
+    const annualTaken = Math.floor(Math.random() * 9);
+    const sickTaken = Math.floor(Math.random() * 5);
 
     await prisma.allocation.create({
       data: {
@@ -409,33 +439,34 @@ async function main() {
     });
   }
 
-  console.log('  ✓ Created 100 allocations (Annual + Sick per employee)');
+  console.log('  ✓ Created 600 allocations (Annual + Sick per employee)');
 
   // ─── 7. Attendance ─────────────────────────────────────────────────────────
   let attendanceCount = 0;
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 300; i++) {
     const empId = employees[i].employee!.id;
-    const recordCount = 25 + Math.floor(Math.random() * 6); // 25-30
+    // 10 attendance records per employee to create ~3000 total attendance rows
+    const recordCount = 10;
 
     for (let r = 0; r < recordCount; r++) {
-      const daysAgo = Math.floor(Math.random() * 60);
+      const daysAgo = r * 3;
       const checkInDate = new Date(now);
       checkInDate.setDate(checkInDate.getDate() - daysAgo);
-      checkInDate.setHours(7 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 60), 0, 0); // 7-9 AM
+      checkInDate.setHours(7 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 60), 0, 0);
 
-      const hoursWorked = 8 + Math.random(); // 8-9 hours
+      const hoursWorked = 8 + Math.random();
       const checkOutDate = new Date(checkInDate.getTime() + hoursWorked * 3600000);
 
-      const isException = r < 2; // ~2 per employee
+      const isException = r === 0 && i % 10 === 0;
       const status = isException ? 'exception' : 'normal';
 
       await prisma.attendance.create({
         data: {
           employeeId: empId,
           checkIn: checkInDate,
-          checkOut: isException && r === 0 ? null : checkOutDate, // first exception has no checkout
-          workedHours: isException && r === 0 ? null : Math.round(hoursWorked * 100) / 100,
+          checkOut: isException ? null : checkOutDate,
+          workedHours: isException ? null : Math.round(hoursWorked * 100) / 100,
           status,
         },
       });
@@ -446,7 +477,6 @@ async function main() {
   console.log(`  ✓ Created ${attendanceCount} attendance records`);
 
   // ─── 8. Historical Payruns ─────────────────────────────────────────────────
-  // Fetch all active contracts with their salary structures + rules
   const activeContracts = await prisma.contract.findMany({
     where: { status: 'active' },
     include: { salaryStructure: { include: { rules: { orderBy: { sequence: 'asc' } } } } },
@@ -457,12 +487,23 @@ async function main() {
     contractByEmployee.set(c.employeeId, c);
   }
 
-  // Payrun 1: July 2026 — Paid
+  // Payrun 1: June 2026 — Paid
+  const june2026Start = new Date(2026, 5, 1);
+  const june2026End = new Date(2026, 5, 30);
+  const payrun1 = await prisma.payrun.create({
+    data: {
+      name: 'June 2026 Payroll',
+      periodStart: june2026Start,
+      periodEnd: june2026End,
+      salaryStructureId: structure1.id,
+      status: 'paid',
+    },
+  });
+
+  // Payrun 2: July 2026 — Paid
   const july2026Start = new Date(2026, 6, 1);
   const july2026End = new Date(2026, 6, 31);
-
-  // Use structure1 for payrun (majority of employees)
-  const payrun1 = await prisma.payrun.create({
+  const payrun2 = await prisma.payrun.create({
     data: {
       name: 'July 2026 Payroll',
       periodStart: july2026Start,
@@ -472,41 +513,10 @@ async function main() {
     },
   });
 
-  for (let i = 0; i < 50; i++) {
-    const empId = employees[i].employee!.id;
-    const contract = contractByEmployee.get(empId);
-    if (!contract) continue;
-
-    const workedDays = 20 + Math.floor(Math.random() * 4); // 20-23
-    const ruleResults = computeSalaryRules(contract.salaryStructure.rules, contract.wage, workedDays);
-    const netLine = ruleResults.find((r) => r.code === 'NET');
-
-    const payslip = await prisma.payslip.create({
-      data: {
-        payrunId: payrun1.id,
-        employeeId: empId,
-        contractId: contract.id,
-        workedDays,
-        status: 'paid',
-        netSalary: netLine?.amount ?? 0,
-        warnings: [],
-        lines: {
-          create: ruleResults.map((r) => ({
-            code: r.code,
-            name: r.name,
-            category: r.category,
-            amount: r.amount,
-          })),
-        },
-      },
-    });
-  }
-
-  // Payrun 2: August 2026 — Validated
+  // Payrun 3: August 2026 — Validated
   const aug2026Start = new Date(2026, 7, 1);
   const aug2026End = new Date(2026, 7, 31);
-
-  const payrun2 = await prisma.payrun.create({
+  const payrun3 = await prisma.payrun.create({
     data: {
       name: 'August 2026 Payroll',
       periodStart: aug2026Start,
@@ -516,39 +526,56 @@ async function main() {
     },
   });
 
-  for (let i = 0; i < 50; i++) {
-    const empId = employees[i].employee!.id;
-    const contract = contractByEmployee.get(empId);
-    if (!contract) continue;
+  const payruns = [payrun1, payrun2, payrun3];
+  let payslipCount = 0;
 
-    const workedDays = 20 + Math.floor(Math.random() * 4);
-    const ruleResults = computeSalaryRules(contract.salaryStructure.rules, contract.wage, workedDays);
-    const netLine = ruleResults.find((r) => r.code === 'NET');
+  for (const payrun of payruns) {
+    for (let i = 0; i < 300; i++) {
+      const empId = employees[i].employee!.id;
+      const contract = contractByEmployee.get(empId);
+      if (!contract) continue;
 
-    await prisma.payslip.create({
-      data: {
-        payrunId: payrun2.id,
-        employeeId: empId,
-        contractId: contract.id,
-        workedDays,
-        status: 'validated',
-        netSalary: netLine?.amount ?? 0,
-        warnings: [],
-        lines: {
-          create: ruleResults.map((r) => ({
-            code: r.code,
-            name: r.name,
-            category: r.category,
-            amount: r.amount,
-          })),
+      const workedDays = 20 + Math.floor(Math.random() * 4);
+      const ruleResults = computeSalaryRules(contract.salaryStructure.rules, contract.wage, workedDays);
+      const netLine = ruleResults.find((r) => r.code === 'NET');
+
+      await prisma.payslip.create({
+        data: {
+          payrunId: payrun.id,
+          employeeId: empId,
+          contractId: contract.id,
+          workedDays,
+          status: payrun.status,
+          netSalary: netLine?.amount ?? 0,
+          warnings: [],
+          lines: {
+            create: ruleResults.map((r) => ({
+              code: r.code,
+              name: r.name,
+              category: r.category,
+              amount: r.amount,
+            })),
+          },
         },
-      },
-    });
+      });
+      payslipCount++;
+    }
   }
 
-  console.log('  ✓ Created 2 historical payruns (July=paid, August=validated) with 100 payslips');
+  console.log(`  ✓ Created 3 historical payruns (June=paid, July=paid, August=validated) with ${payslipCount} payslips`);
 
-  console.log('\n✅ Seed complete!');
+  // ─── 9. Export Credentials CSV ─────────────────────────────────────────────
+  const fs = require('fs');
+  const path = require('path');
+  const csvLines = ['Name,Email,Role,Password,EmployeeID'];
+  for (const cred of userCredentials) {
+    csvLines.push(`"${cred.name}","${cred.email}","${cred.role}","${cred.password}","${cred.employeeId || ''}"`);
+  }
+  const csvPath = path.join(__dirname, 'user_credentials.csv');
+  fs.writeFileSync(csvPath, csvLines.join('\n'), 'utf8');
+  console.log(`  ✓ Exported ${userCredentials.length} user credentials to ${csvPath}`);
+
+  console.log('\n✅ Seed complete! Total Database Rows generated: 4,000+');
 }
 
 main()
