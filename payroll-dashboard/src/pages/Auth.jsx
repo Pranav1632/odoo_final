@@ -25,9 +25,9 @@ export function AuthPage({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    email: 'payroll.manager@peoplepay360.com',
-    password: 'Manager@123',
-    role: 'HR_PAYROLL_MANAGER',
+    email: '',
+    password: '',
+    role: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,19 +39,7 @@ export function AuthPage({ onLoginSuccess }) {
   };
 
   const handleRoleSelect = (selectedRole) => {
-    // Login mode only (register has no role selector) — auto-fill credentials
-    // from the seeded demo account.
-    const seedUser = SEED_USERS.find(u => u.role === selectedRole);
-    if (seedUser) {
-      setFormData({
-        name: seedUser.name,
-        email: seedUser.email,
-        password: seedUser.password,
-        role: seedUser.role,
-      });
-    } else {
-      handleChange('role', selectedRole);
-    }
+    handleChange('role', selectedRole);
     setError('');
   };
 
@@ -110,7 +98,7 @@ export function AuthPage({ onLoginSuccess }) {
           <div className="flex items-center justify-center gap-2 mb-6 border-b border-gray-100 pb-4">
             <button
               type="button"
-              onClick={() => { setMode('login'); setError(''); setPendingMessage(''); setFormData({ name: '', email: 'payroll.manager@peoplepay360.com', password: 'Manager@123', role: 'HR_PAYROLL_MANAGER' }); }}
+              onClick={() => { setMode('login'); setError(''); setPendingMessage(''); setFormData({ name: '', email: '', password: '', role: '' }); }}
               className={`pb-1 text-sm font-semibold transition-colors relative ${
                 mode === 'login' ? 'text-ink-900 border-b-2 border-ink-900' : 'text-gray-400 hover:text-gray-600'
               }`}
@@ -120,7 +108,7 @@ export function AuthPage({ onLoginSuccess }) {
             <span className="text-gray-300">·</span>
             <button
               type="button"
-              onClick={() => { setMode('register'); setError(''); setPendingMessage(''); setFormData({ name: '', email: '', password: '', role: 'EMPLOYEE' }); }}
+              onClick={() => { setMode('register'); setError(''); setPendingMessage(''); setFormData({ name: '', email: '', password: '', role: '' }); }}
               className={`pb-1 text-sm font-semibold transition-colors relative ${
                 mode === 'register' ? 'text-ink-900 border-b-2 border-ink-900' : 'text-gray-400 hover:text-gray-600'
               }`}
@@ -149,7 +137,7 @@ export function AuthPage({ onLoginSuccess }) {
                 variant="secondary"
                 type="button"
                 className="w-full"
-                onClick={() => { setMode('login'); setPendingMessage(''); setFormData({ name: '', email: '', password: '', role: 'HR_PAYROLL_MANAGER' }); }}
+                onClick={() => { setMode('login'); setPendingMessage(''); setFormData({ name: '', email: '', password: '', role: '' }); }}
               >
                 Back to Sign In
               </Button>
@@ -223,10 +211,13 @@ export function AuthPage({ onLoginSuccess }) {
                   label="Role"
                   value={formData.role}
                   onChange={(e) => handleRoleSelect(e.target.value)}
-                  options={SEED_USERS.map((user) => ({
-                    value: user.role,
-                    label: formatRoleName(user.role),
-                  }))}
+                  options={[
+                    { value: '', label: 'Select a role...' },
+                    ...SEED_USERS.map((user) => ({
+                      value: user.role,
+                      label: formatRoleName(user.role),
+                    })),
+                  ]}
                 />
               </div>
             ) : (
