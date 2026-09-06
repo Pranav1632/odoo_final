@@ -59,6 +59,7 @@ router.post(
       action: 'LOGIN',
       entityType: 'User',
       entityId: user.id,
+      details: { email: user.email, role: user.role },
     });
 
     return res.json({

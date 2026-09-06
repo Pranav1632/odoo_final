@@ -441,6 +441,42 @@ async function main() {
 
   console.log('  ✓ Created 600 allocations (Annual + Sick per employee)');
 
+  // ─── 6b. Time Off Requests ──────────────────────────────────────────────────
+  let requestCount = 0;
+  const statuses = ['approved', 'pending', 'refused'];
+
+  for (let i = 0; i < 300; i++) {
+    const empId = employees[i].employee!.id;
+    // Create 1-2 leave requests per employee
+    const reqsPerEmp = 1 + (i % 2);
+
+    for (let r = 0; r < reqsPerEmp; r++) {
+      const daysAgo = 10 + (r * 15) + (i % 30);
+      const reqStart = new Date(now);
+      reqStart.setDate(reqStart.getDate() - daysAgo);
+      const reqEnd = new Date(reqStart);
+      const duration = 1 + (i % 4); // 1-4 days
+      reqEnd.setDate(reqEnd.getDate() + (duration - 1));
+
+      const status = statuses[(i + r) % statuses.length];
+      const typeId = (i + r) % 2 === 0 ? annualLeave.id : sickLeave.id;
+
+      await prisma.timeOffRequest.create({
+        data: {
+          employeeId: empId,
+          typeId,
+          startDate: reqStart,
+          endDate: reqEnd,
+          duration,
+          status,
+        },
+      });
+      requestCount++;
+    }
+  }
+
+  console.log(`  ✓ Created ${requestCount} time off requests`);
+
   // ─── 7. Attendance ─────────────────────────────────────────────────────────
   let attendanceCount = 0;
 
