@@ -253,44 +253,57 @@ export function EmployeesList() {
           )}
         </Card>
       ) : (
-        /* Static Read-only Kanban grouped by department */
+        /* Dynamic Kanban grouped by department */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="employees-kanban-view">
-          {departments.map(dept => {
-            const deptEmployees = filteredEmployees.filter(e => e.departmentId === dept.id);
-            return (
-              <div key={dept.id} className="bg-white rounded-2xl p-4 shadow-soft border border-black/[0.04] space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-900 text-sm">{dept.name}</h3>
-                  <Badge variant="gray" size="sm">{deptEmployees.length}</Badge>
-                </div>
-                <div className="space-y-2.5 max-h-[500px] overflow-y-auto">
-                  {deptEmployees.length === 0 ? (
-                    <p className="text-center text-xs text-gray-400 py-6">No employees</p>
-                  ) : (
-                    deptEmployees.map(emp => (
-                      <div
-                        key={emp.id}
-                        onClick={() => navigate(`/employees/${emp.id}`)}
-                        className="p-3 bg-cream/60 hover:bg-cream rounded-xl cursor-pointer transition-all border border-gray-100 space-y-2"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Avatar name={emp.fullName} size="sm" />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-gray-900 text-sm truncate">{emp.fullName}</p>
-                            <p className="text-xs text-gray-500 truncate">{emp.jobPositionId || 'Staff'}</p>
+          {(() => {
+            // Collect all unique department names present in current employees list
+            const activeDeptNames = Array.from(new Set(filteredEmployees.map(e => e.departmentId || 'Unassigned')));
+            // Combine predefined departments with any extra department names from database
+            const allDeptKeys = Array.from(new Set([...departments.map(d => d.id), ...activeDeptNames]));
+            
+            return allDeptKeys.map(deptKey => {
+              const deptObj = departments.find(d => d.id === deptKey);
+              const deptName = deptObj ? deptObj.name : deptKey;
+              const deptEmployees = filteredEmployees.filter(e => (e.departmentId || 'Unassigned') === deptKey);
+              
+              // Skip empty extra columns if they are not in standard departments list
+              if (deptEmployees.length === 0 && !deptObj) return null;
+
+              return (
+                <div key={deptKey} className="bg-white rounded-2xl p-4 shadow-soft border border-black/[0.04] space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                    <h3 className="font-bold text-gray-900 text-sm">{deptName}</h3>
+                    <Badge variant="gray" size="sm">{deptEmployees.length}</Badge>
+                  </div>
+                  <div className="space-y-2.5 max-h-[500px] overflow-y-auto">
+                    {deptEmployees.length === 0 ? (
+                      <p className="text-center text-xs text-gray-400 py-6">No employees</p>
+                    ) : (
+                      deptEmployees.map(emp => (
+                        <div
+                          key={emp.id}
+                          onClick={() => navigate(`/employees/${emp.id}`)}
+                          className="p-3 bg-cream/60 hover:bg-cream rounded-xl cursor-pointer transition-all border border-gray-100 space-y-2"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Avatar name={emp.fullName} size="sm" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 text-sm truncate">{emp.fullName}</p>
+                              <p className="text-xs text-gray-500 truncate">{emp.jobPositionId || 'Staff'}</p>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center pt-1">
+                            <span className="text-[11px] font-mono text-gray-500">{emp.employeeId}</span>
+                            <Badge variant={getStatusColor(emp.employmentStatus)} size="sm">{emp.employmentStatus}</Badge>
                           </div>
                         </div>
-                        <div className="flex justify-between items-center pt-1">
-                          <span className="text-[11px] font-mono text-gray-500">{emp.employeeId}</span>
-                          <Badge variant={getStatusColor(emp.employmentStatus)} size="sm">{emp.employmentStatus}</Badge>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
       )}
     </div>

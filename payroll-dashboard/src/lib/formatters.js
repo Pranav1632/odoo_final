@@ -54,10 +54,12 @@ export const getStatusBadge = (status) => {
 export const DEPARTMENTS = [
   { id: 'Engineering', name: 'Engineering' },
   { id: 'Marketing', name: 'Marketing' },
-  { id: 'Human Resources', name: 'Human Resources' },
+  { id: 'HR', name: 'HR' },
   { id: 'Operations', name: 'Operations' },
   { id: 'Finance', name: 'Finance' },
   { id: 'Sales', name: 'Sales' },
+  { id: 'Support', name: 'Support' },
+  { id: 'Product', name: 'Product' },
 ];
 
 export const JOB_POSITIONS = [
