@@ -396,14 +396,17 @@ async function main() {
   console.log(`  ✓ Created ${contractCount} contracts (2 per employee)`);
 
   // ─── 5. Time Off Types ─────────────────────────────────────────────────────
+  // payrollIntegrated = counts as a paid worked day for payroll purposes.
+  // Annual/Sick Leave are paid leave types, so they integrate; Unpaid Leave
+  // (by definition) does not.
   const annualLeave = await prisma.timeOffType.create({
-    data: { name: 'Annual Leave', unit: 'days', requiresAllocation: true, payrollIntegrated: false },
+    data: { name: 'Annual Leave', unit: 'days', requiresAllocation: true, payrollIntegrated: true },
   });
   const sickLeave = await prisma.timeOffType.create({
-    data: { name: 'Sick Leave', unit: 'days', requiresAllocation: true, payrollIntegrated: false },
+    data: { name: 'Sick Leave', unit: 'days', requiresAllocation: true, payrollIntegrated: true },
   });
   await prisma.timeOffType.create({
-    data: { name: 'Unpaid Leave', unit: 'days', requiresAllocation: false, payrollIntegrated: true },
+    data: { name: 'Unpaid Leave', unit: 'days', requiresAllocation: false, payrollIntegrated: false },
   });
 
   console.log('  ✓ Created 3 time off types');
