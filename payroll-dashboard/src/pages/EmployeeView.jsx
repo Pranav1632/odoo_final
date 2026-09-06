@@ -164,15 +164,15 @@ export function EmployeeView() {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Work Phone</p>
-                <p className="font-medium text-gray-900">{employee.workPhone || '+1-555-0199'}</p>
+                <p className="font-medium text-gray-900">{employee.workPhone || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Department</p>
-                <p className="font-medium text-gray-900">{employee.department || 'General'}</p>
+                <p className="font-medium text-gray-900">{employee.department || 'Unassigned'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Job Position</p>
-                <p className="font-medium text-gray-900">{employee.jobPosition || 'Staff'}</p>
+                <p className="font-medium text-gray-900">{employee.jobPosition || 'Unassigned'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Working Schedule</p>
@@ -206,11 +206,11 @@ export function EmployeeView() {
             <CardBody className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500">Bank Name</p>
-                <p className="font-medium text-gray-900">{employee.bankName || 'HDFC Bank'}</p>
+                <p className="font-medium text-gray-900">{employee.bankName || 'Not Provided'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Account Number</p>
-                <p className="font-mono font-medium text-gray-900">{employee.bankAccountNumber || employee.accountNumber || '—'}</p>
+                <p className="font-mono font-medium text-gray-900">{employee.bankAccountNumber || employee.accountNumber || 'Not Provided'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Payment Method</p>
