@@ -33,6 +33,16 @@ export function AuthPage({ onLoginSuccess }) {
   const [error, setError] = useState('');
   const [pendingMessage, setPendingMessage] = useState('');
 
+  // Clear any existing session token when landing on Auth page so user is not stuck
+  useState(() => {
+    try {
+      localStorage.removeItem('pp360_session');
+      localStorage.removeItem('token');
+    } catch (e) {
+      // ignore
+    }
+  });
+
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError('');

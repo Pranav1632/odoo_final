@@ -366,7 +366,7 @@ export default function App() {
           <Route path="/403" element={<Error403Page session={null} onLogout={handleLogout} />} />
           <Route path="/404" element={<Error404Page />} />
           <Route path="/500" element={<Error500Page />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
         </Routes>
       ) : (
         <Routes>
