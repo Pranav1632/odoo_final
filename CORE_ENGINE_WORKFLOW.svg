@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" width="100%" height="100%" style="background:#fff9f6; font-family: 'Inter', system-ui, sans-serif;">
+  <defs>
+    <style>
+      .bg-card { fill: #ffffff; stroke: #ede8e0; stroke-width: 1.5; rx: 16px; }
+      .bg-dark { fill: #0f151d; rx: 16px; }
+      .bg-accent { fill: #fff1ea; stroke: #ff7448; stroke-width: 1; rx: 8px; }
+      .text-title { font-size: 22px; font-weight: 800; fill: #0f151d; }
+      .text-subtitle { font-size: 13px; font-weight: 500; fill: #6b655b; }
+      .text-header { font-size: 15px; font-weight: 700; fill: #0f151d; }
+      .text-body { font-size: 12px; fill: #4a453d; }
+      .text-code { font-family: monospace; font-size: 11px; fill: #ff7448; }
+      .text-white { fill: #ffffff; }
+      .text-muted-dark { fill: #9ca3af; font-size: 11px; }
+      .arrow { stroke: #ff7448; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#ff7448" />
+    </marker>
+  </defs>
+
+  <!-- Title Banner -->
+  <text x="600" y="45" text-anchor="middle" class="text-title">PeoplePay360 — Core Engine & Execution Flow</text>
+  <text x="600" y="68" text-anchor="middle" class="text-subtitle">Visual Map of Core Payroll Calculation, Active Contract Guards, and Asynchronous Mail Queue</text>
+
+  <!-- SECTION 1: END-TO-END EXECUTION FLOW -->
+  <g transform="translate(40, 100)">
+    <rect width="1120" height="120" class="bg-card" />
+    <text x="20" y="30" class="text-header">1. End-to-End API Execution Pipeline</text>
+
+    <g transform="translate(20, 45)">
+      <rect width="250" height="55" fill="#faf8f5" stroke="#ede8e0" rx="10" />
+      <text x="15" y="24" font-size="12" font-weight="700" fill="#0f151d">1. HTTP Client Request</text>
+      <text x="15" y="42" font-size="11" fill="#6b655b">React Frontend + Bearer JWT Token</text>
+    </g>
+
+    <path d="M 285 72 L 315 72" class="arrow" />
+
+    <g transform="translate(320, 45)">
+      <rect width="250" height="55" fill="#faf8f5" stroke="#ede8e0" rx="10" />
+      <text x="15" y="24" font-size="12" font-weight="700" fill="#0f151d">2. Auth &amp; RBAC Middleware</text>
+      <text x="15" y="42" font-size="11" fill="#6b655b">requireAuth + requireRole check</text>
+    </g>
+
+    <path d="M 585 72 L 615 72" class="arrow" />
+
+    <g transform="translate(620, 45)">
+      <rect width="250" height="55" fill="#faf8f5" stroke="#ede8e0" rx="10" />
+      <text x="15" y="24" font-size="12" font-weight="700" fill="#0f151d">3. Zod Payload Validation</text>
+      <text x="15" y="42" font-size="11" fill="#6b655b">Sanitizes request schema</text>
+    </g>
+
+    <path d="M 885 72 L 915 72" class="arrow" />
+
+    <g transform="translate(920, 45)">
+      <rect width="180" height="55" fill="#fff1ea" stroke="#ff7448" rx="10" />
+      <text x="15" y="24" font-size="12" font-weight="700" fill="#d94e1f">4. Core Engine / ORM</text>
+      <text x="15" y="42" font-size="11" fill="#d94e1f">Prisma DB Transaction</text>
+    </g>
+  </g>
+
+  <!-- SECTION 2: CORE PAYROLL COMPUTATION ENGINE -->
+  <g transform="translate(40, 240)">
+    <rect width="720" height="370" class="bg-dark" />
+    <text x="25" y="35" font-size="16" font-weight="700" fill="#ffffff">2. Core Payroll Calculation Engine (computeRules.ts)</text>
+    <text x="25" y="55" class="text-muted-dark">Sequential Rule Pipeline &amp; Dynamic Scope Accumulation via mathjs</text>
+
+    <!-- Rule Rows -->
+    <g transform="translate(25, 75)">
+      <rect width="670" height="45" fill="rgba(255,255,255,0.06)" rx="8" />
+      <text x="15" y="27" font-family="monospace" font-size="12" font-weight="700" fill="#ff7448">SEQ 10</text>
+      <text x="90" y="27" font-size="13" font-weight="700" fill="#ffffff">BASIC</text>
+      <rect x="200" y="12" width="70" height="22" fill="rgba(255,255,255,0.15)" rx="4" />
+      <text x="235" y="27" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">FIXED</text>
+      <text x="310" y="27" font-family="monospace" font-size="12" fill="#d1d5db">contract.wage</text>
+      <text x="650" y="27" text-anchor="end" font-family="monospace" font-size="13" font-weight="700" fill="#34d399">₹ 60,000</text>
+    </g>
+
+    <g transform="translate(25, 130)">
+      <rect width="670" height="45" fill="rgba(255,255,255,0.06)" rx="8" />
+      <text x="15" y="27" font-family="monospace" font-size="12" font-weight="700" fill="#ff7448">SEQ 20</text>
+      <text x="90" y="27" font-size="13" font-weight="700" fill="#ffffff">HRA</text>
+      <rect x="200" y="12" width="90" height="22" fill="rgba(20,80,198,0.4)" rx="4" />
+      <text x="245" y="27" text-anchor="middle" font-size="10" font-weight="700" fill="#90b4ff">PERCENTAGE</text>
+      <text x="310" y="27" font-family="monospace" font-size="12" fill="#d1d5db">40% of BASIC</text>
+      <text x="650" y="27" text-anchor="end" font-family="monospace" font-size="13" font-weight="700" fill="#34d399">₹ 24,000</text>
+    </g>
+
+    <g transform="translate(25, 185)">
+      <rect width="670" height="45" fill="rgba(255,255,255,0.06)" rx="8" />
+      <text x="15" y="27" font-family="monospace" font-size="12" font-weight="700" fill="#ff7448">SEQ 30</text>
+      <text x="90" y="27" font-size="13" font-weight="700" fill="#ffffff">ALLOWANCE</text>
+      <rect x="200" y="12" width="70" height="22" fill="rgba(255,255,255,0.15)" rx="4" />
+      <text x="235" y="27" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">FIXED</text>
+      <text x="310" y="27" font-family="monospace" font-size="12" fill="#d1d5db">5,000</text>
+      <text x="650" y="27" text-anchor="end" font-family="monospace" font-size="13" font-weight="700" fill="#34d399">₹ 5,000</text>
+    </g>
+
+    <g transform="translate(25, 240)">
+      <rect width="670" height="45" fill="rgba(255,255,255,0.06)" rx="8" />
+      <text x="15" y="27" font-family="monospace" font-size="12" font-weight="700" fill="#ff7448">SEQ 40</text>
+      <text x="90" y="27" font-size="13" font-weight="700" fill="#ffffff">PF_DEDUCTION</text>
+      <rect x="200" y="12" width="80" height="22" fill="rgba(255,116,72,0.3)" rx="4" />
+      <text x="240" y="27" text-anchor="middle" font-size="10" font-weight="700" fill="#ff9d7d">FORMULA</text>
+      <text x="310" y="27" font-family="monospace" font-size="12" fill="#d1d5db">BASIC * 0.12</text>
+      <text x="650" y="27" text-anchor="end" font-family="monospace" font-size="13" font-weight="700" fill="#34d399">₹ 7,200</text>
+    </g>
+
+    <g transform="translate(25, 295)">
+      <rect width="670" height="50" fill="rgba(255,255,255,0.12)" stroke="#ff7448" stroke-width="1.5" rx="8" />
+      <text x="15" y="30" font-family="monospace" font-size="13" font-weight="700" fill="#ff7448">SEQ 50</text>
+      <text x="90" y="30" font-size="14" font-weight="700" fill="#ffffff">NET SALARY</text>
+      <text x="310" y="30" font-family="monospace" font-size="12" fill="#ffffff">BASIC + HRA + ALLOW - PF</text>
+      <text x="650" y="30" text-anchor="end" font-family="monospace" font-size="15" font-weight="800" fill="#60a5fa">₹ 81,800</text>
+    </g>
+  </g>
+
+  <!-- SECTION 3: ASYNCHRONOUS MAIL QUEUE -->
+  <g transform="translate(780, 240)">
+    <rect width="380" height="370" class="bg-card" />
+    <text x="20" y="35" class="text-header">3. Asynchronous Task Queue</text>
+    <text x="20" y="55" class="text-subtitle">BullMQ + Redis + Mailpit (Port 1025)</text>
+
+    <g transform="translate(20, 75)">
+      <rect width="340" height="60" fill="#faf8f5" stroke="#ede8e0" rx="10" />
+      <text x="15" y="25" font-size="12" font-weight="700" fill="#0f151d">1. Payrun Validate Trigger</text>
+      <text x="15" y="43" font-size="11" fill="#6b655b">Manager clicks Send Payslips</text>
+    </g>
+
+    <path d="M 190 140 L 190 160" class="arrow" />
+
+    <g transform="translate(20, 165)">
+      <rect width="340" height="60" fill="#faf8f5" stroke="#ede8e0" rx="10" />
+      <text x="15" y="25" font-size="12" font-weight="700" fill="#0f151d">2. BullMQ / Redis Queue</text>
+      <text x="15" y="43" font-size="11" fill="#6b655b">Pushes job to payslip-send queue</text>
+    </g>
+
+    <path d="M 190 230 L 190 250" class="arrow" />
+
+    <g transform="translate(20, 255)">
+      <rect width="340" height="85" fill="#fff1ea" stroke="#ff7448" rx="10" />
+      <text x="15" y="25" font-size="12" font-weight="700" fill="#d94e1f">3. Background Worker Process</text>
+      <text x="15" y="43" font-size="11" fill="#4a453d">• Renders PDF with pdfkit (~12ms)</text>
+      <text x="15" y="60" font-size="11" fill="#4a453d">• Sends SMTP to Mailpit (1025)</text>
+      <text x="15" y="75" font-size="11" fill="#4a453d">• Logs batch errors to ErrorLog</text>
+    </g>
+  </g>
+</svg>

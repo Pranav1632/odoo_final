@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PeoplePay360 — Core System Architecture & Workflow Diagram</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fff9f6;
+      --card-bg: #ffffff;
+      --border: #ede8e0;
+      --text: #0f151d;
+      --text-muted: #6b655b;
+      --accent: #ff7448;
+      --accent-light: #fff1ea;
+      --accent-dark: #d94e1f;
+      --dark-card: #0f151d;
+      --dark-text: #ffffff;
+      --dark-muted: #9ca3af;
+      --blue-bg: #e8effc;
+      --blue-text: #1450c6;
+      --green-bg: #e7f6ea;
+      --green-text: #198a35;
+      --amber-bg: #fdf3e2;
+      --amber-text: #b45309;
+      --shadow: 0 4px 20px -4px rgba(20, 19, 16, 0.08), 0 1px 3px rgba(20, 19, 16, 0.04);
+      --shadow-lg: 0 12px 32px -8px rgba(20, 19, 16, 0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2.5rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(255, 116, 72, 0.2);
+    }
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem;
+      box-shadow: var(--shadow);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-b: 1px solid var(--border);
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    .icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    /* Grid Layouts */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      position: relative;
+    }
+
+    /* Process Flow Step Node */
+    .step-node {
+      background: #faf8f5;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.25rem;
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .step-node:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--text);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .step-node h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .step-node p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    .code-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 6px;
+      color: var(--text);
+    }
+
+    /* Salary Computation Flow Visualiser */
+    .engine-box {
+      background: var(--dark-card);
+      color: var(--dark-text);
+      border-radius: 20px;
+      padding: 1.75rem;
+    }
+    .engine-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .engine-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .rule-pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .rule-row {
+      display: grid;
+      grid-template-columns: 80px 180px 140px 1fr 120px;
+      align-items: center;
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.85rem;
+    }
+    .rule-seq {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .rule-name {
+      font-weight: 600;
+    }
+    .rule-type {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .type-fixed { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    .type-percentage { background: rgba(20, 80, 198, 0.3); color: #90b4ff; }
+    .type-formula { background: rgba(255, 116, 72, 0.25); color: #ff9d7d; }
+
+    .rule-formula {
+      font-family: 'JetBrains Mono', monospace;
+      color: #d1d5db;
+      font-size: 0.8rem;
+    }
+    .rule-output {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #34d399;
+      text-align: right;
+    }
+
+    /* Queue Diagram */
+    .queue-visual {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      background: #faf8f5;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    .q-node {
+      flex: 1;
+      min-width: 180px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .q-arrow {
+      font-size: 1.5rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="badge-pill">⚡ Architecture & Engine Workflows</div>
+      <h1>PeoplePay360 Core Engine Flow</h1>
+      <p>Interactive Visual Mapping of Core Payroll Computation, RBAC, Contract Overlap, and Asynchronous Task Queues</p>
+    </header>
+
+    <!-- 1. SYSTEM ARCHITECTURE & DATA PIPELINE -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">
+          <div class="icon-box">1</div>
+          <span>System End-to-End Execution Flow</span>
+        </div>
+        <span class="code-tag">Express API + React + Prisma</span>
+      </div>
+      
+      <div class="flow-grid">
+        <div class="step-node">
+          <div class="step-number">1</div>
+          <h4>Client HTTP Request</h4>
+          <p>User performs action on React dashboard. Request is sent with JWT bearer header to Express API.</p>
+        </div>
+        <div class="step-node">
+          <div class="step-number">2</div>
+          <h4>Auth & RBAC Middleware</h4>
+          <p><span class="code-tag">requireAuth</span> verifies JWT token & <span class="code-tag">requireRole</span> validates permissions against target route.</p>
+        </div>
+        <div class="step-node">
+          <div class="step-number">3</div>
+          <h4>Zod Schema Validation</h4>
+          <p>Incoming request payload is parsed and sanitized against strict Zod type constraints before controller execution.</p>
+        </div>
+        <div class="step-node">
+          <div class="step-number">4</div>
+          <h4>ORM / Core Engine Execution</h4>
+          <p>Prisma transactions handle atomic DB updates; core calculation engines compute rules and allocations.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. CORE PAYROLL COMPUTATION ENGINE -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">
+          <div class="icon-box">2</div>
+          <span>Core Payroll Calculation Engine (<span class="code-tag">computeRules.ts</span>)</span>
+        </div>
+        <span class="code-tag">mathjs Engine</span>
+      </div>
+
+      <div class="engine-box">
+        <div class="engine-header">
+          <div class="engine-title">Sequential Rule Evaluation Pipeline (Sorted by Sequence Order)</div>
+          <span style="font-size: 0.75rem; color: #9ca3af; font-family: 'JetBrains Mono', monospace;">Scope State Dictionary Accumulation</span>
+        </div>
+
+        <div class="rule-pipeline">
+          <div class="rule-row">
+            <span class="rule-seq">SEQ 10</span>
+            <span class="rule-name">BASIC</span>
+            <span class="rule-type type-fixed">FIXED</span>
+            <span class="rule-formula">contract.wage</span>
+            <span class="rule-output">₹ 60,000</span>
+          </div>
+
+          <div class="rule-row">
+            <span class="rule-seq">SEQ 20</span>
+            <span class="rule-name">HRA</span>
+            <span class="rule-type type-percentage">PERCENTAGE</span>
+            <span class="rule-formula">40% of BASIC</span>
+            <span class="rule-output">₹ 24,000</span>
+          </div>
+
+          <div class="rule-row">
+            <span class="rule-seq">SEQ 30</span>
+            <span class="rule-name">ALLOWANCE</span>
+            <span class="rule-type type-fixed">FIXED</span>
+            <span class="rule-formula">5,000</span>
+            <span class="rule-output">₹ 5,000</span>
+          </div>
+
+          <div class="rule-row">
+            <span class="rule-seq">SEQ 40</span>
+            <span class="rule-name">PF_DEDUCTION</span>
+            <span class="rule-type type-formula">FORMULA</span>
+            <span class="rule-formula">BASIC * 0.12</span>
+            <span class="rule-output">₹ 7,200</span>
+          </div>
+
+          <div class="rule-row">
+            <span class="rule-seq">SEQ 50</span>
+            <span class="rule-name">NET_SALARY</span>
+            <span class="rule-type type-formula">FORMULA</span>
+            <span class="rule-formula">BASIC + HRA + ALLOWANCE - PF</span>
+            <span class="rule-output" style="color: #60a5fa;">₹ 81,800</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ASYNCHRONOUS BULK EMAIL QUEUE FLOW -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">
+          <div class="icon-box">3</div>
+          <span>Asynchronous Bulk Email Dispatch (<span class="code-tag">BullMQ + Redis + Mailpit</span>)</span>
+        </div>
+        <span class="code-tag">Non-Blocking Queue</span>
+      </div>
+
+      <div class="queue-visual">
+        <div class="q-node">
+          <div style="font-weight: 700; margin-bottom: 0.25rem;">1. Payrun Validate</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Manager clicks "Send Payslips"</div>
+          <div style="margin-top: 0.5rem;"><span class="code-tag">POST /payruns/:id/send</span></div>
+        </div>
+
+        <div class="q-arrow">➔</div>
+
+        <div class="q-node">
+          <div style="font-weight: 700; margin-bottom: 0.25rem;">2. Enqueue Job</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Job pushed to Redis queue</div>
+          <div style="margin-top: 0.5rem;"><span class="code-tag">payslip-send Queue</span></div>
+        </div>
+
+        <div class="q-arrow">➔</div>
+
+        <div class="q-node">
+          <div style="font-weight: 700; margin-bottom: 0.25rem;">3. Background Worker</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Generates itemized PDFs with <span class="code-tag">pdfkit</span></div>
+          <div style="margin-top: 0.5rem;"><span class="code-tag">sendPayslipsWorker</span></div>
+        </div>
+
+        <div class="q-arrow">➔</div>
+
+        <div class="q-node">
+          <div style="font-weight: 700; margin-bottom: 0.25rem;">4. Mailpit Delivery</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Transmits SMTP to port 1025</div>
+          <div style="margin-top: 0.5rem;"><span class="code-tag">Mailpit Web UI (8025)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. KEY SYSTEM PROTECTION GUARDS -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">
+          <div class="icon-box">4</div>
+          <span>Key System Protection Guards</span>
+        </div>
+        <span class="code-tag">Security & Validation</span>
+      </div>
+
+      <div class="flow-grid">
+        <div class="step-node" style="border-left: 4px solid var(--accent);">
+          <h4>Contract Overlap Guard</h4>
+          <p>Prevents an employee from having two active overlapping contracts. Activating a contract closes prior active ones.</p>
+          <div style="margin-top: 0.5rem;"><span class="code-tag">contractUtils.ts</span></div>
+        </div>
+
+        <div class="step-node" style="border-left: 4px solid var(--blue-text);">
+          <h4>Time-Off Self-Approval Guard</h4>
+          <p>Explicit check preventing managers from approving or refusing their own leave requests (<span class="code-tag">403 Forbidden</span>).</p>
+          <div style="margin-top: 0.5rem;"><span class="code-tag">timeoff.ts</span></div>
+        </div>
+
+        <div class="step-node" style="border-left: 4px solid var(--green-text);">
+          <h4>Pending User Registration Gatekeeper</h4>
+          <p>Self-registered accounts start as <span class="code-tag">EMPLOYEE</span> with <span class="code-tag">pending</span> status until Admin approval.</p>
+          <div style="margin-top: 0.5rem;"><span class="code-tag">auth.ts</span></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      PeoplePay360 Enterprise Architecture Workflow — Generated for System Review & Presentation
+    </footer>
+  </div>
+</body>
+</html>
