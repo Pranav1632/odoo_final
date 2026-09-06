@@ -457,6 +457,28 @@ router.post(
       }
     }
 
+    // Re-check for duplicates live, rather than trusting warnings stored at
+    // compute time — another payrun may have been validated/paid for the same
+    // employee/period since this one was last computed.
+    const employeeIds = (payrun as any).payslips.map((p: any) => p.employeeId);
+    const overlappingPayslips = await prisma.payslip.findMany({
+      where: {
+        employeeId: { in: employeeIds },
+        payrunId: { not: id },
+        status: { in: ['validated', 'paid'] },
+        payrun: {
+          periodStart: { lte: payrun.periodEnd },
+          periodEnd: { gte: payrun.periodStart },
+        },
+      },
+      select: { employeeId: true, payrun: { select: { name: true } } },
+    });
+    for (const p of overlappingPayslips) {
+      blockingWarnings.push(
+        `Employee ${p.employeeId}: duplicate payslip — employee already has a validated/paid payslip for an overlapping period in "${p.payrun.name}"`
+      );
+    }
+
     if (blockingWarnings.length > 0) {
       throw new ApiError(
         400,

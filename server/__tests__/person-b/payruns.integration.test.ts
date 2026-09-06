@@ -428,4 +428,35 @@ describe('Payrun validate — status gate', () => {
 
     expect(res.status).toBe(400);
   });
+
+  // TOCTOU regression: a payslip's stored warnings can be stale by the time
+  // /validate runs — e.g. a *different* overlapping-period payrun for the
+  // same employee was validated *after* this payrun was last computed.
+  // /validate must re-check for conflicts live, not just trust what was
+  // written down at compute time.
+  test('validate blocks on a duplicate that only became a conflict after this payrun was computed', async () => {
+    const { prisma } = require('../../src/lib/prisma');
+    (prisma.payrun.findUnique as jest.Mock).mockResolvedValueOnce({
+      id: 'payrun-b',
+      status: 'computed',
+      periodStart: new Date('2026-08-01'),
+      periodEnd: new Date('2026-08-31'),
+      payslips: [
+        { id: 'payslip-b1', employeeId: 'emp-1', warnings: [] }, // clean at compute time
+      ],
+    });
+    // Simulates: emp-1 was validated in a different overlapping-period payrun
+    // ("payrun-a") in the time between this payrun's compute and its validate.
+    (prisma.payslip.findMany as jest.Mock).mockResolvedValueOnce([
+      { employeeId: 'emp-1', payrun: { name: 'payrun-a' } },
+    ]);
+
+    const res = await request(app)
+      .post('/api/payruns/payrun-b/validate')
+      .set('Authorization', `Bearer ${payrollManagerToken}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/duplicate payslip/i);
+    expect(res.body.error).toMatch(/payrun-a/);
+  });
 });
