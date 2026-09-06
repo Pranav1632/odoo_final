@@ -57,7 +57,7 @@ odoo/
 └── payroll-dashboard/                # React 18 + Vite Frontend Application
     ├── src/
     │   ├── App.jsx                   # React Router setup & protected route boundaries
-    │   ├── index.css                 # Global Tailwind CSS tokens & glassmorphism theme
+    │   ├── index.css                 # Global Tailwind CSS tokens & modern warm neutral theme
     │   ├── components/               # Reusable Design System Components (Topbar, UI Card, Button, Input)
     │   ├── lib/
     │   │   ├── api.js                # Frontend HTTP client & endpoint wrappers
