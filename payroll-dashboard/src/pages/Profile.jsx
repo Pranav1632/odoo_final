@@ -1,6 +1,6 @@
 // src/pages/Profile.jsx
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardBody, PageHeader, Badge, Avatar, Breadcrumb } from '../components/UI';
+import { Card, CardHeader, CardBody, PageHeader, Badge, Avatar, Breadcrumb, Button } from '../components/UI';
 import { getSession } from '../lib/user';
 import { employeesApi } from '../lib/api';
 
