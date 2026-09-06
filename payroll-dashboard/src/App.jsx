@@ -25,22 +25,13 @@ import { AuditLog } from './pages/AuditLog';
 import { UserManagement } from './pages/UserManagement';
 import { Profile } from './pages/Profile';
 import { ToastContainer } from './components/ToastContainer';
+import { Error401Page, Error403Page, Error404Page, Error500Page } from './pages/ErrorPages';
 import { getSession, logout } from './lib/user';
 
-function ProtectedRoute({ session, allowedRoles, children }) {
+function ProtectedRoute({ session, allowedRoles, onLogout, children }) {
   if (!session) return <Navigate to="/login" replace />;
   if (allowedRoles && !allowedRoles.includes('ALL') && !allowedRoles.includes(session.role)) {
-    return (
-      <div className="text-center py-16 space-y-4">
-        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl font-bold">
-          ✕
-        </div>
-        <h2 className="text-xl font-bold text-ink-900">Access Restricted</h2>
-        <p className="text-sm text-gray-500 max-w-sm mx-auto">
-          Your current role (<span className="font-semibold">{session.role}</span>) does not have permission to access this module.
-        </p>
-      </div>
-    );
+    return <Error403Page session={session} onLogout={onLogout} />;
   }
   return children;
 }
@@ -334,8 +325,14 @@ function Layout({ session, onLogout }) {
                   </ProtectedRoute>
                 } />
 
+                {/* Dedicated Error Pages */}
+                <Route path="/401" element={<Error401Page onLogout={onLogout} />} />
+                <Route path="/403" element={<Error403Page session={session} onLogout={onLogout} />} />
+                <Route path="/404" element={<Error404Page />} />
+                <Route path="/500" element={<Error500Page />} />
+
                 {/* Catch-all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Error404Page />} />
               </Routes>
             </div>
           </main>
@@ -365,12 +362,20 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
           <Route path="/register" element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="/401" element={<Error401Page onLogout={handleLogout} />} />
+          <Route path="/403" element={<Error403Page session={null} onLogout={handleLogout} />} />
+          <Route path="/404" element={<Error404Page />} />
+          <Route path="/500" element={<Error500Page />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
         <Routes>
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
+          <Route path="/401" element={<Error401Page onLogout={handleLogout} />} />
+          <Route path="/403" element={<Error403Page session={session} onLogout={handleLogout} />} />
+          <Route path="/404" element={<Error404Page />} />
+          <Route path="/500" element={<Error500Page />} />
           <Route path="/*" element={<Layout session={session} onLogout={handleLogout} />} />
         </Routes>
       )}
