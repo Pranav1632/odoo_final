@@ -1,6 +1,15 @@
 // src/components/Topbar.jsx
 import { useState, useRef, useEffect } from 'react';
 import { Avatar, Dropdown } from './UI';
+import { systemLogsApi } from '../lib/api';
+
+function formatTimeAgo(date) {
+  const diffSec = Math.floor((new Date() - date) / 1000);
+  if (diffSec < 60) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)} min ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} hour ago`;
+  return `${Math.floor(diffSec / 86400)} day ago`;
+}
 
 const ALL_NAV_ITEMS = [
   { id: 'profile', label: 'My Profile', href: '/', roles: ['EMPLOYEE'] },
@@ -21,10 +30,36 @@ export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
   const notifRef = useRef(null);
   const userMenuRef = useRef(null);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    systemLogsApi.getAuditLogs('limit=5')
+      .then(res => {
+        if (res?.data && Array.isArray(res.data)) {
+          setNotifications(res.data.map(log => {
+            const timeAgo = formatTimeAgo(new Date(log.createdAt));
+            let msg = `${log.userName || 'System'} performed ${log.action} on ${log.entityType}`;
+            if (log.action === 'REGISTER') msg = `New user registration: ${log.userName || 'Employee'}`;
+            if (log.action === 'LOGIN') msg = `User login: ${log.userName || log.userEmail}`;
+            if (log.action === 'CREATE_PAYRUN') msg = `New Payrun created by ${log.userName}`;
+            if (log.action === 'VALIDATE_PAYRUN') msg = `Payrun validated successfully by ${log.userName}`;
+            return {
+              id: log.id,
+              message: msg,
+              time: timeAgo,
+              read: false
+            };
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -135,35 +170,75 @@ export function Topbar({ onNavigate, user, onToggleMobileNav, onLogout }) {
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
             <button
-              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              onClick={() => {
+                const nextState = !notificationsOpen;
+                setNotificationsOpen(nextState);
+                if (nextState) {
+                  systemLogsApi.getAuditLogs('limit=5')
+                    .then(res => {
+                      if (res?.data && Array.isArray(res.data)) {
+                        setNotifications(res.data.map(log => {
+                          const timeAgo = formatTimeAgo(new Date(log.createdAt));
+                          let msg = `${log.userName || 'System'} performed ${log.action} on ${log.entityType}`;
+                          if (log.action === 'REGISTER') msg = `New user registration: ${log.userName || 'Employee'}`;
+                          if (log.action === 'LOGIN') msg = `User login: ${log.userName || log.userEmail}`;
+                          if (log.action === 'CREATE_PAYRUN') msg = `New Payrun created by ${log.userName}`;
+                          if (log.action === 'VALIDATE_PAYRUN') msg = `Payrun validated successfully by ${log.userName}`;
+                          return {
+                            id: log.id,
+                            message: msg,
+                            time: timeAgo,
+                            read: false
+                          };
+                        }));
+                      }
+                    })
+                    .catch(err => console.error('Failed to load notifications:', err));
+                }
+              }}
               className="relative w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:text-ink-900 hover:bg-cream transition-colors"
               aria-label="Notifications"
               aria-expanded={notificationsOpen}
               data-testid="topbar-notifications"
             >
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-              <span className="absolute top-1 right-1 w-4 h-4 bg-accent-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">3</span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-accent-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
             </button>
             {notificationsOpen && (
               <div className="absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 animate-scale-in z-50 overflow-hidden">
                 <div className="p-4 flex items-center justify-between border-b border-gray-100">
                   <h3 className="font-semibold text-sm text-ink-900">Notifications</h3>
-                  <button className="text-xs font-medium text-accent-600 hover:underline">Mark all read</button>
+                  <button 
+                    onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                    className="text-xs font-medium text-accent-600 hover:underline"
+                  >
+                    Mark all read
+                  </button>
                 </div>
                 <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
-                  {[
-                    { id: 1, message: 'Payrun "August 2025" validated successfully', time: '2 min ago', read: false },
-                    { id: 2, message: '5 employees missing bank details', time: '1 hour ago', read: false },
-                    { id: 3, message: 'Contract CTR-000004 expiring in 30 days', time: '3 hours ago', read: true },
-                  ].map(notif => (
-                    <button key={notif.id} className={`w-full px-4 py-3 text-left hover:bg-cream transition-colors ${!notif.read ? 'border-l-2 border-accent-500 bg-accent-50/30' : ''}`}>
-                      <p className="text-xs font-medium text-ink-900 leading-snug">{notif.message}</p>
-                      <p className="text-[11px] text-gray-500 mt-1">{notif.time}</p>
-                    </button>
-                  ))}
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-gray-400">No new notifications</div>
+                  ) : (
+                    notifications.map(notif => (
+                      <button 
+                        key={notif.id} 
+                        onClick={() => setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n))}
+                        className={`w-full px-4 py-3 text-left hover:bg-cream transition-colors ${!notif.read ? 'border-l-2 border-accent-500 bg-accent-50/30' : ''}`}
+                      >
+                        <p className="text-xs font-medium text-ink-900 leading-snug">{notif.message}</p>
+                        <p className="text-[11px] text-gray-500 mt-1">{notif.time}</p>
+                      </button>
+                    ))
+                  )}
                 </div>
                 <div className="p-2.5 border-t border-gray-100 bg-cream/50 text-center">
-                  <button className="text-xs font-medium text-accent-600 hover:underline">View all notifications</button>
+                  <button onClick={() => { setNotificationsOpen(false); onNavigate('/audit-log'); }} className="text-xs font-medium text-accent-600 hover:underline">
+                    View system logs
+                  </button>
                 </div>
               </div>
             )}

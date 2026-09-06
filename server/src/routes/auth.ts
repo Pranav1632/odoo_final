@@ -104,8 +104,8 @@ router.post(
         employee: {
           create: {
             name: name || email.split('@')[0],
-            department: 'Operations',
-            jobPosition: 'Staff',
+            department: 'Unassigned',
+            jobPosition: 'Unassigned',
           },
         },
       },

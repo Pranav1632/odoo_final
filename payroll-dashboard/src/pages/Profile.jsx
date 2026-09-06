@@ -36,12 +36,12 @@ export function Profile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.employeeId]);
 
-  const fullName = employee?.name || session?.name || 'Administrator';
-  const email = employee?.userId ? `${(employee.name || 'admin').toLowerCase().replace(/\s+/g, '.')}@peoplepay360.com` : (session?.email || 'admin@peoplepay360.com');
-  const department = employee?.department || 'Human Resources';
-  const position = employee?.jobPosition || 'HR Payroll Manager';
-  const schedule = employee?.schedule?.name || 'Standard 40h';
-  const bankAccount = employee?.bankAccountNumber ? `••••${employee.bankAccountNumber.slice(-4)}` : '••••9012';
+  const fullName = employee?.name || session?.name || 'User';
+  const email = session?.email || (employee?.name ? `${employee.name.toLowerCase().replace(/\s+/g, '.')}@peoplepay360.com` : 'user@peoplepay360.com');
+  const department = employee?.department || 'Unassigned (Pending HR Setup)';
+  const position = employee?.jobPosition || 'Unassigned (Pending HR Setup)';
+  const schedule = employee?.schedule?.name || 'Unassigned (Pending HR Setup)';
+  const bankAccount = employee?.bankAccountNumber ? employee.bankAccountNumber : 'Not Provided';
 
   if (loading) {
     return (
@@ -131,20 +131,12 @@ export function Profile() {
             </CardHeader>
             <CardBody className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-xs text-gray-500">Phone</p>
-                <p className="font-medium text-ink-900 mt-0.5">+91 98765 43210</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Address</p>
-                <p className="font-medium text-ink-900 mt-0.5">Corporate HQ, Mumbai, MH</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Bank Name</p>
-                <p className="font-medium text-ink-900 mt-0.5">HDFC Bank</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Account Number</p>
+                <p className="text-xs text-gray-500">Bank Account Number</p>
                 <p className="font-medium text-ink-900 mt-0.5">{bankAccount}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Work Email</p>
+                <p className="font-medium text-ink-900 mt-0.5">{email}</p>
               </div>
             </CardBody>
           </Card>

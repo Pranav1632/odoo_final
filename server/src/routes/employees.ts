@@ -157,11 +157,31 @@ router.get(
 router.patch(
   '/:id',
   requireAuth,
-  requireRole(['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN']),
   asyncHandler(async (req, res) => {
     const session = req.session!;
     const id = req.params.id as string;
     const body = updateSchema.parse(req.body);
+
+    const existing = await prisma.employee.findUnique({ where: { id } });
+    if (!existing) throw new ApiError(404, 'Not found');
+
+    const isHrOrAdmin = ['HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER', 'ADMIN'].includes(session.role);
+    const isSelf = session.role === 'EMPLOYEE' && existing.userId === session.userId;
+
+    if (!isHrOrAdmin && !isSelf) {
+      throw new ApiError(403, 'Forbidden');
+    }
+
+    // Employees updating their own profile can only edit personal details like bank account
+    if (!isHrOrAdmin && isSelf) {
+      delete body.department;
+      delete body.jobPosition;
+      delete body.scheduleId;
+      delete body.status;
+      delete body.employmentType;
+      delete body.hireDate;
+    }
+
     const employee = await prisma.employee.update({
       where: { id },
       data: body,
