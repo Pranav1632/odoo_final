@@ -14,9 +14,13 @@ let transport: Transporter | null = null;
 export function getEmailTransport(): Transporter {
   if (!transport) {
     transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST ?? 'localhost',
+      host: process.env.SMTP_HOST ?? '127.0.0.1',
       port: Number(process.env.SMTP_PORT ?? 1025),
       secure: false,
+      ignoreTLS: true,
+      tls: {
+        rejectUnauthorized: false,
+      },
       // Mailpit (and most local SMTP catchers) don't require auth.
       auth: process.env.SMTP_USER
         ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }

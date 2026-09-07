@@ -56,11 +56,13 @@ async function apiRequest(endpoint, options = {}) {
 
 export const authApi = {
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  changePassword: (data) => apiRequest('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const usersApi = {
   getAll: () => apiRequest('/users'),
   update: (id, data) => apiRequest(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  resetPassword: (id, newPassword) => apiRequest(`/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ newPassword }) }),
 };
 
 export const employeesApi = {

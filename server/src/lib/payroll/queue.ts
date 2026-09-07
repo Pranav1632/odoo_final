@@ -19,10 +19,23 @@ export const redisConnection = new IORedis({
   retryStrategy: (times) => (times > 3 ? null : Math.min(times * 200, 1000)),
 });
 
+redisConnection.on('error', (err: any) => {
+  // Suppress unhandled connection error crashes when Redis is offline
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('[Redis] Connection warning:', err?.message || err);
+  }
+});
+
 /**
  * BullMQ queue for bulk payslip send jobs.
  * Scoped to this one job type — nothing else uses this queue.
  */
 export const payslipSendQueue = new Queue('payslip-send', {
   connection: redisConnection,
+});
+
+payslipSendQueue.on('error', (err: any) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('[payslipSendQueue] Queue warning:', err?.message || err);
+  }
 });

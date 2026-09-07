@@ -9,6 +9,7 @@ import { getActiveContractForPeriod } from '../lib/contracts';
 import { getWorkedDaysForPeriod } from '../lib/attendance';
 import { computeSalaryRules } from '../lib/payroll/computeRules';
 import { payslipSendQueue } from '../lib/payroll/queue';
+import { processSendPayslipsJob } from '../lib/payroll/workers/sendPayslips';
 
 const router = Router();
 
@@ -319,91 +320,98 @@ router.post(
       duplicateByEmployee.set(p.employeeId, p.payrun.name);
     }
 
-    // Process each payslip in parallel
-    const updates = await Promise.all(
-      (payrun as any).payslips.map(async (payslip: any) => {
-        const warnings: string[] = [];
+    // Process payslips in controlled batches of 15 to avoid DB pool exhaustion / transaction timeouts on large payruns
+    const updates: Array<{ skipped: boolean; employeeId: string; netSalary?: number }> = [];
+    const payslipList = (payrun as any).payslips;
+    const chunkSize = 15;
 
-        const duplicatePayrunName = duplicateByEmployee.get(payslip.employeeId);
-        if (duplicatePayrunName) {
-          warnings.push(
-            `duplicate payslip — employee already has a validated/paid payslip for an overlapping period in "${duplicatePayrunName}"`
+    for (let i = 0; i < payslipList.length; i += chunkSize) {
+      const chunk = payslipList.slice(i, i + chunkSize);
+      const chunkResults = await Promise.all(
+        chunk.map(async (payslip: any) => {
+          const warnings: string[] = [];
+
+          const duplicatePayrunName = duplicateByEmployee.get(payslip.employeeId);
+          if (duplicatePayrunName) {
+            warnings.push(
+              `duplicate payslip — employee already has a validated/paid payslip for an overlapping period in "${duplicatePayrunName}"`
+            );
+          }
+
+          // 1. Resolve the period-correct contract
+          const contract = await getActiveContractForPeriod(
+            payslip.employeeId,
+            payrun.periodStart,
+            payrun.periodEnd
           );
-        }
 
-        // 1. Resolve the period-correct contract
-        const contract = await getActiveContractForPeriod(
-          payslip.employeeId,
-          payrun.periodStart,
-          payrun.periodEnd
-        );
+          if (!contract) {
+            warnings.push('no active contract for period — payslip skipped');
+            await prisma.payslip.update({
+              where: { id: payslip.id },
+              data: { warnings, status: 'draft' },
+            });
+            return { skipped: true, employeeId: payslip.employeeId };
+          }
 
-        if (!contract) {
-          warnings.push('no active contract for period — payslip skipped');
-          await prisma.payslip.update({
-            where: { id: payslip.id },
-            data: { warnings, status: 'draft' },
+          // 2. Build base context
+          const workedDays = await getWorkedDaysForPeriod(
+            payslip.employeeId,
+            payrun.periodStart,
+            payrun.periodEnd
+          );
+
+          const baseContext: Record<string, number> = {
+            CONTRACT_WAGE: contract.wage,
+            WORKED_DAYS: workedDays,
+          };
+
+          // 3. Run the rule engine
+          const {
+            lines,
+            scope,
+            warnings: ruleWarnings,
+          } = computeSalaryRules(
+            contract.salaryStructure.rules.map((r: any) => ({
+              ...r,
+              computationMethod: r.computationMethod as 'fixed' | 'percentage' | 'formula',
+            })),
+            baseContext
+          );
+          warnings.push(...ruleWarnings);
+
+          // 4. Warn if bank details missing
+          if (!payslip.employee.bankAccountNumber) {
+            warnings.push('missing bank details — cannot process payment');
+          }
+
+          // 5. Find net salary
+          const netLine = lines.find((l) => l.category === 'Net');
+          const netSalary = netLine?.amount ?? scope['NET'] ?? 0;
+
+          // 6. Update lines and payslip in a transaction
+          await prisma.$transaction(async (tx) => {
+            await tx.payslipLine.deleteMany({ where: { payslipId: payslip.id } });
+            await tx.payslipLine.createMany({
+              data: lines.map((l) => ({ ...l, payslipId: payslip.id })),
+            });
+            await tx.payslip.update({
+              where: { id: payslip.id },
+              data: {
+                contractId: contract.id,
+                workedDays,
+                netSalary,
+                warnings,
+                status: 'computed',
+              },
+            });
           });
-          return { skipped: true, employeeId: payslip.employeeId };
-        }
 
-        // 2. Build base context
-        const workedDays = await getWorkedDaysForPeriod(
-          payslip.employeeId,
-          payrun.periodStart,
-          payrun.periodEnd
-        );
-
-        const baseContext: Record<string, number> = {
-          CONTRACT_WAGE: contract.wage,
-          WORKED_DAYS: workedDays,
-        };
-
-        // 3. Run the rule engine (uses contract's structure rules, not payrun's — period-correct)
-        const {
-          lines,
-          scope,
-          warnings: ruleWarnings,
-        } = computeSalaryRules(
-          contract.salaryStructure.rules.map((r: any) => ({
-            ...r,
-            computationMethod: r.computationMethod as 'fixed' | 'percentage' | 'formula',
-          })),
-          baseContext
-        );
-        warnings.push(...ruleWarnings);
-
-        // 4. Warn if bank details missing
-        if (!payslip.employee.bankAccountNumber) {
-          warnings.push('missing bank details — cannot process payment');
-        }
-
-        // 5. Find net salary
-        const netLine = lines.find((l) => l.category === 'Net');
-        const netSalary = netLine?.amount ?? scope['NET'] ?? 0;
-
-        // 6. Delete old lines and create new ones (enables recompute on draft payslips)
-        //    This is the key pattern for the live-demo "edit rule → recompute" flow
-        await prisma.$transaction(async (tx) => {
-          await tx.payslipLine.deleteMany({ where: { payslipId: payslip.id } });
-          await tx.payslipLine.createMany({
-            data: lines.map((l) => ({ ...l, payslipId: payslip.id })),
-          });
-          await tx.payslip.update({
-            where: { id: payslip.id },
-            data: {
-              contractId: contract.id,
-              workedDays,
-              netSalary,
-              warnings,
-              status: 'computed',
-            },
-          });
-        });
-
-        return { skipped: false, employeeId: payslip.employeeId, netSalary };
-      })
-    );
+          return { skipped: false, employeeId: payslip.employeeId, netSalary };
+        })
+      );
+      updates.push(...chunkResults);
+    }
 
     await prisma.payrun.update({
       where: { id },
@@ -573,33 +581,15 @@ router.post(
         payrunId: id,
         requestedByUserId: session.userId,
       });
+      return res.json({ message: 'Payslip send job queued' });
     } catch (err) {
-      // Graceful degradation when Redis is unreachable — return 503, not 500.
-      // A connection failure here typically surfaces as a Node AggregateError
-      // (from net's internalConnectMultiple) whose own .message is empty — the
-      // real ECONNREFUSED/code lives on the error itself or its nested .errors
-      // array, not in .message, so check all of those rather than .message alone.
-      const anyErr = err as { message?: string; code?: string; errors?: Array<{ code?: string; message?: string }> };
-      const haystack = [
-        anyErr.message,
-        anyErr.code,
-        ...(anyErr.errors ?? []).flatMap((e) => [e.message, e.code]),
-      ]
-        .filter(Boolean)
-        .join(' ');
-      if (
-        haystack.includes('ECONNREFUSED') ||
-        haystack.includes('ETIMEDOUT') ||
-        haystack.includes('connect') ||
-        haystack.includes('NOAUTH') ||
-        haystack.includes('redis')
-      ) {
-        return res.status(503).json({ error: 'Queue unavailable — Redis is unreachable' });
-      }
-      throw err;
+      console.warn('[Send Payslips] Queue enqueue failed, fallback to inline execution:', (err as Error).message);
+      const result = await processSendPayslipsJob({
+        payrunId: id,
+        requestedByUserId: session.userId,
+      });
+      return res.json({ message: `Payslips sent inline (${result.sent} delivered)` });
     }
-
-    res.json({ message: 'Payslip send job queued' });
   })
 );
 

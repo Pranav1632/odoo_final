@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../lib/asyncHandler';
@@ -95,4 +96,62 @@ router.patch(
   })
 );
 
+const resetPasswordSchema = z.object({
+  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+// Role hierarchy rank for password reset authorization
+const ROLE_HIERARCHY: Record<string, number> = {
+  ADMIN: 4,
+  HR_MANAGER: 3,
+  HR_PAYROLL_MANAGER: 2,
+  HR_PAYROLL_USER: 1,
+  EMPLOYEE: 0,
+};
+
+// ---------------------------------------------------------------------------
+// POST /api/users/:id/reset-password
+// Reset password by higher authority (ADMIN, HR_MANAGER, HR_PAYROLL_MANAGER)
+// ---------------------------------------------------------------------------
+router.post(
+  '/:id/reset-password',
+  requireAuth,
+  requireRole(['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER']),
+  asyncHandler(async (req, res) => {
+    const session = req.session!;
+    const targetUserId = req.params.id as string;
+    const { newPassword } = resetPasswordSchema.parse(req.body);
+
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) throw new ApiError(404, 'User not found');
+
+    const requesterRank = ROLE_HIERARCHY[session.role] ?? 0;
+    const targetRank = ROLE_HIERARCHY[targetUser.role] ?? 0;
+
+    // Admin can reset anyone's password.
+    // Non-admins can only reset passwords of users strictly lower in hierarchy.
+    if (session.role !== 'ADMIN' && requesterRank <= targetRank) {
+      throw new ApiError(403, 'Forbidden: You cannot reset the password for a user with equal or higher authority');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: targetUserId },
+      data: { password: hashedPassword },
+    });
+
+    await writeAuditLog({
+      userId: session.userId,
+      action: 'RESET_USER_PASSWORD',
+      entityType: 'User',
+      entityId: targetUserId,
+      details: { resetBy: session.userId, resetByRole: session.role, targetEmail: targetUser.email },
+    });
+
+    res.json({ message: 'Password reset successfully' });
+  })
+);
+
 export default router;
+

@@ -25,7 +25,9 @@ export type AuditAction =
   | 'ATTACH_EMPLOYEES'
   | 'REGISTER'
   | 'APPROVE_USER'
-  | 'UPDATE_USER';
+  | 'UPDATE_USER'
+  | 'RESET_USER_PASSWORD'
+  | 'CHANGE_PASSWORD';
 
 
 export async function writeAuditLog(params: {

@@ -120,3 +120,10 @@ export const sendPayslipsWorker = new Worker<SendPayslipsJobData>(
   async (job) => processSendPayslipsJob(job.data),
   { connection: redisConnection }
 );
+
+sendPayslipsWorker.on('error', (err) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('[sendPayslipsWorker] Worker error:', err?.message || err);
+  }
+});
+

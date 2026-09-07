@@ -99,9 +99,41 @@ export function UserManagement() {
             Re-enable
           </Button>
         )}
+        {['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER'].includes(session?.role) && u.id !== session?.userId && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => { setResetModalUser(u); setResetPasswordInput(''); setResetError(''); setResetSuccess(''); }}
+          >
+            🔑 Reset Pass
+          </Button>
+        )}
       </div>
     </div>
   );
+
+  const [resetModalUser, setResetModalUser] = useState(null);
+  const [resetPasswordInput, setResetPasswordInput] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!resetModalUser) return;
+    setResetting(true);
+    setResetError('');
+    setResetSuccess('');
+    try {
+      await usersApi.resetPassword(resetModalUser.id, resetPasswordInput);
+      setResetSuccess(`Password for ${resetModalUser.email} has been reset successfully!`);
+      setTimeout(() => setResetModalUser(null), 1500);
+    } catch (err) {
+      setResetError(err.message || 'Failed to reset password');
+    } finally {
+      setResetting(false);
+    }
+  };
 
   return (
     <div className="space-y-6" data-testid="user-management-page">
@@ -149,6 +181,52 @@ export function UserManagement() {
           )}
         </CardBody>
       </Card>
+
+      {/* Reset Password Modal */}
+      {resetModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 space-y-4">
+            <h3 className="text-base font-bold text-gray-900">
+              Reset Password for {resetModalUser.employee?.name || resetModalUser.email}
+            </h3>
+
+            {resetError && (
+              <div className="p-2.5 bg-red-50 text-red-700 text-xs font-medium rounded-xl border border-red-200">
+                {resetError}
+              </div>
+            )}
+            {resetSuccess && (
+              <div className="p-2.5 bg-green-50 text-green-700 text-xs font-medium rounded-xl border border-green-200">
+                {resetSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-700 block mb-1">New Temporary Password</label>
+                <input
+                  type="password"
+                  placeholder="Enter new password (min 6 chars)"
+                  value={resetPasswordInput}
+                  onChange={(e) => setResetPasswordInput(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-accent-500 font-mono"
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setResetModalUser(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" loading={resetting}>
+                  Reset Password
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

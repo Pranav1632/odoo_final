@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody, PageHeader, Badge, Avatar, Breadcrumb, Button } from '../components/UI';
 import { getSession } from '../lib/user';
-import { employeesApi } from '../lib/api';
+import { employeesApi, authApi } from '../lib/api';
 
 export function Profile() {
   const session = getSession();
@@ -13,6 +13,14 @@ export function Profile() {
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState('');
+
+  // Password Change state
+  const [pwModalOpen, setPwModalOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [pwUpdating, setPwUpdating] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -61,6 +69,24 @@ export function Profile() {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwUpdating(true);
+    setPwError('');
+    setPwSuccess('');
+    try {
+      await authApi.changePassword({ oldPassword, newPassword });
+      setPwSuccess('Password changed successfully!');
+      setOldPassword('');
+      setNewPassword('');
+      setTimeout(() => setPwModalOpen(false), 1500);
+    } catch (err) {
+      setPwError(err.message || 'Failed to change password');
+    } finally {
+      setPwUpdating(false);
+    }
+  };
+
   const fullName = employee?.name || session?.name || 'User';
   const email = session?.email || (employee?.name ? `${employee.name.toLowerCase().replace(/\s+/g, '.')}@peoplepay360.com` : 'user@peoplepay360.com');
   const department = employee?.department || 'Unassigned (Pending HR Setup)';
@@ -95,9 +121,14 @@ export function Profile() {
         title={fullName}
         subtitle={`${position} · ${department}`}
         actions={
-          <Button variant="secondary" onClick={() => { setEditModalOpen(true); setUpdateError(''); setUpdateSuccess(''); }}>
-            ✏️ Edit Personal Details
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => { setPwModalOpen(true); setPwError(''); setPwSuccess(''); setOldPassword(''); setNewPassword(''); }}>
+              🔒 Change Password
+            </Button>
+            <Button variant="secondary" onClick={() => { setEditModalOpen(true); setUpdateError(''); setUpdateSuccess(''); }}>
+              ✏️ Edit Personal Details
+            </Button>
+          </div>
         }
       />
 
@@ -180,12 +211,67 @@ export function Profile() {
         </div>
       </div>
 
+      {/* Change Password Modal */}
+      {pwModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 space-y-4">
+            <h3 className="text-base font-bold text-ink-900">Change Password</h3>
+
+            {pwError && (
+              <div className="p-2.5 bg-red-50 text-red-700 text-xs font-medium rounded-xl border border-red-200">
+                {pwError}
+              </div>
+            )}
+            {pwSuccess && (
+              <div className="p-2.5 bg-green-50 text-green-700 text-xs font-medium rounded-xl border border-green-200">
+                {pwSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-700 block mb-1">Current Password</label>
+                <input
+                  type="password"
+                  placeholder="Enter current password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-accent-500 font-mono"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-700 block mb-1">New Password</label>
+                <input
+                  type="password"
+                  placeholder="Enter new password (min 6 chars)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-accent-500 font-mono"
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setPwModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" loading={pwUpdating}>
+                  Update Password
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Edit Personal Details Modal */}
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 space-y-4">
             <h3 className="text-base font-bold text-ink-900">Edit Personal & Payment Details</h3>
-            
+
             {updateError && (
               <div className="p-2.5 bg-red-50 text-red-700 text-xs font-medium rounded-xl border border-red-200">
                 {updateError}

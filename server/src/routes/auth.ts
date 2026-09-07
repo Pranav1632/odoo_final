@@ -129,4 +129,45 @@ router.post(
   })
 );
 
+import { requireAuth } from '../middleware/auth';
+
+const changePasswordSchema = z.object({
+  oldPassword: z.string().min(1, 'Old password is required'),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+});
+
+// POST /api/auth/change-password
+// Self-service password update for logged in users
+router.post(
+  '/change-password',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const session = req.session!;
+    const { oldPassword, newPassword } = changePasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { id: session.userId } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const valid = await bcrypt.compare(oldPassword, user.password);
+    if (!valid) return res.status(400).json({ error: 'Incorrect current password' });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: session.userId },
+      data: { password: hashedPassword },
+    });
+
+    await writeAuditLog({
+      userId: session.userId,
+      action: 'CHANGE_PASSWORD',
+      entityType: 'User',
+      entityId: session.userId,
+    });
+
+    return res.json({ message: 'Password changed successfully' });
+  })
+);
+
 export default router;
+

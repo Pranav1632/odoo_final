@@ -1,6 +1,4 @@
-import nodemailer from 'nodemailer';
-
-async function startLocalSmtpServer() {
+export async function startLocalSmtpServer(): Promise<void> {
   let smtpServerModule: any;
   try {
     smtpServerModule = require('smtp-server');
@@ -12,6 +10,8 @@ async function startLocalSmtpServer() {
   }
 
   const { SMTPServer } = smtpServerModule;
+  const port = Number(process.env.SMTP_PORT ?? 1025);
+
   const server = new SMTPServer({
     disabledCommands: ['AUTH'],
     onData(stream: any, _session: any, callback: () => void) {
@@ -29,12 +29,25 @@ async function startLocalSmtpServer() {
     },
   });
 
-  server.listen(1025, '0.0.0.0', () => {
-    console.log('--------------------------------------------------');
-    console.log('Local SMTP Mail Server running on port 1025');
-    console.log('All outbound payslips will be captured instantly!');
-    console.log('--------------------------------------------------');
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`[SMTP Server] Port ${port} is already bound (e.g. Mailpit running).`);
+    } else {
+      console.error('[SMTP Server Error]:', err.message || err);
+    }
+  });
+
+  return new Promise((resolve) => {
+    server.listen(port, '0.0.0.0', () => {
+      console.log('--------------------------------------------------');
+      console.log(`Local SMTP Server running on port ${port}`);
+      console.log('Outbound payslips captured instantly.');
+      console.log('--------------------------------------------------');
+      resolve();
+    });
   });
 }
 
-startLocalSmtpServer().catch(err => console.error('SMTP Server Error:', err));
+if (require.main === module) {
+  startLocalSmtpServer().catch(err => console.error('SMTP Server Error:', err));
+}
